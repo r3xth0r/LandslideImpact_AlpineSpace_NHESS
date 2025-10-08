@@ -36,7 +36,7 @@ library(vip)       # variable importance (vi_permute)
 folder <- "/export/home/klidl/ssteger/scratch/xriskcc/CodeDataSharing" # Set Path to folder where data is stored
 
 # Load each object (readRDS used for reproducible storage of R objects) --------------------------------
-basins     <- readRDS(file.path(folder, "basins.rds"))                     # Basins with static data (sf object) -- polygons with attributes
+basins     <- readRDS(file.path(folder, "basins_compressed.rds"))          # Basins with static data (sf object) -- polygons with attributes
 AS         <- readRDS(file.path(folder, "Alpine_Space_Boundary_4326.rds")) # Alpine Space outline (sf)
 df_slides  <- readRDS(file.path(folder, "df_slides.rds"))                  # Training data for slide-type (SL) model
 df_flows   <- readRDS(file.path(folder, "df_flows.rds"))                   # Training data for flow-type (DF) model
@@ -623,3 +623,4 @@ p_RF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = 'keep') # 4 column
 print(p_RF) # render fall partials (Fig. 8)
 
 # End of script ---------------------------------------------------------------------------------------
+

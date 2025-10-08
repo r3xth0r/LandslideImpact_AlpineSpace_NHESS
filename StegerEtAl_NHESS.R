@@ -59,12 +59,12 @@ tm_shape(AS) + tm_fill(col = "lightgrey") + tm_borders(col = "black", lwd = 2) +
 
 # Example plot for basins: Mean slope angles in the respective PPAs -----------------------------------
 # "Missing" (NA) means no PPA pixel in the entire basin; facets show SL, DF, RF slope maps
+# Basin polygons are filled without outlines; use tm_polygons() for visualizing borders.
 tm_shape(basins) +
-  tm_polygons(c("SL_Slope", "DF_Slope", "RF_Slope"),  # Slides (SL), Flows (DF), Falls (RF)  -- plot three attributes
-    fill.scale = tm_scale(values = c("#d7f4be", "#f0d076", "#e73030")), # three-color ramp (low→high)
-    fill.legend = tm_legend(title = "Mean slope in PPA"), # legend title
-    fill.free = FALSE) + tm_facets(ncol = 1) # keep same scale across facets (fill.free FALSE); one column facets
-#
+  tm_fill(c("SL_Slope", "DF_Slope", "RF_Slope"), # Slides (SL), Flows (DF), Falls (RF)  -- plot three attributes
+    fill.scale = tm_scale(values = c("#d7f4be", "#f0d076", "#e73030")),
+    fill.legend = tm_legend(title = "Mean slope in PPA"), fill.free = FALSE) +
+  tm_facets(ncol = 1)
 ##
 ###
 ##########
@@ -623,4 +623,5 @@ p_RF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = 'keep') # 4 column
 print(p_RF) # render fall partials (Fig. 8)
 
 # End of script ---------------------------------------------------------------------------------------
+
 

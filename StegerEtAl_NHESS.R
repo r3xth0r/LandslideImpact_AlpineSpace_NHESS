@@ -493,7 +493,7 @@ plots <- lapply(seq_along(plots), function(i) {
       legend.title = element_text(size = 100))
   # Manually relabel the ticks for the 11th plot (discrete variable) if present
   if (i == 11) {
-    p <- p + scale_x_discrete(labels = c("No", "Yes")) # nicer labels for binary factor}
+    p <- p + scale_x_discrete(labels = c("No", "Yes"))} # nicer labels for binary factor
   return(p)})
 length(plots) # check number of plots produced
 # Tag letters for each plot ---------------------------------------------------------------------------------
@@ -623,5 +623,6 @@ p_RF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = 'keep') # 4 column
 print(p_RF) # render fall partials (Fig. 8)
 
 # End of script ---------------------------------------------------------------------------------------
+
 
 

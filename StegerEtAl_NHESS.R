@@ -33,21 +33,20 @@ library(vip)       # variable importance (vi_permute)
 ###
 ##
 #
-folder <- "/export/home/klidl/ssteger/scratch/xriskcc/CodeDataSharing" # Set Path to folder where data is stored
 
 # Load each object (readRDS used for reproducible storage of R objects) --------------------------------
-basins     <- readRDS(file.path(folder, "basins_compressed.rds"))          # Basins with static data (sf object) -- polygons with attributes
-AS         <- readRDS(file.path(folder, "Alpine_Space_Boundary_4326.rds")) # Alpine Space outline (sf)
-df_slides  <- readRDS(file.path(folder, "df_slides.rds"))                  # Training data for slide-type (SL) model
-df_flows   <- readRDS(file.path(folder, "df_flows.rds"))                   # Training data for flow-type (DF) model
-df_falls   <- readRDS(file.path(folder, "df_falls.rds"))                   # Training data for fall-type (RF) model
-SLcv       <- readRDS(file.path(folder, "mySLcv_5f_10r.rds"))              # Cross validation results for slide type (SL) model
-DFcv       <- readRDS(file.path(folder, "myDFcv_5f_10r.rds"))              # Cross validation results for flow type (DF) model
-RFcv       <- readRDS(file.path(folder, "myRFcv_5f_10r.rds"))              # Cross validation results for fall type (RF) model
-varimpo_raw    <- readRDS(file.path(folder, "varimpo_raw.rds"))            # Results (raw) from variable importance assessment (raw permute outputs)
-varimpoSL <- readRDS(file.path(folder, "varimpoSL.rds"))                   # Plot-ready variable importance data for slide-type (SL)
-varimpoDF <- readRDS(file.path(folder, "varimpoDF.rds"))                   # Plot-ready variable importance data for flow-type (DF)
-varimpoRF <- readRDS(file.path(folder, "varimpoRF.rds"))                   # Plot-ready variable importance data for fall-type (RF)
+basins     <- readRDS("data/basins_compressed.rds")          # Basins with static data (sf object) -- polygons with attributes
+AS         <- readRDS("data/Alpine_Space_Boundary_4326.rds") # Alpine Space outline (sf)
+df_slides  <- readRDS("data/df_slides.rds")                  # Training data for slide-type (SL) model
+df_flows   <- readRDS("data/df_flows.rds")                   # Training data for flow-type (DF) model
+df_falls   <- readRDS("data/df_falls.rds")                   # Training data for fall-type (RF) model
+SLcv       <- readRDS("data/mySLcv_5f_10r.rds")              # Cross validation results for slide type (SL) model
+DFcv       <- readRDS("data/myDFcv_5f_10r.rds")              # Cross validation results for flow type (DF) model
+RFcv       <- readRDS("data/myRFcv_5f_10r.rds")              # Cross validation results for fall type (RF) model
+varimpo_raw    <- readRDS("data/varimpo_raw.rds")            # Results (raw) from variable importance assessment (raw permute outputs)
+varimpoSL <- readRDS("data/varimpoSL.rds")                   # Plot-ready variable importance data for slide-type (SL)
+varimpoDF <- readRDS("data/varimpoDF.rds")                   # Plot-ready variable importance data for flow-type (DF)
+varimpoRF <- readRDS("data/varimpoRF.rds")                   # Plot-ready variable importance data for fall-type (RF)
 
 # Colors for plots -----------------------------------------------------------------------------------
 cols = "#56b899" # color slide-type models (SL)

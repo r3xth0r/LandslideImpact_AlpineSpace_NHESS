@@ -22,7 +22,6 @@ Matthias Schlögl<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orc
 **Impact-based early warning of mass movements – A dynamic spatial modelling approach for the Alpine region**.
 *EGUsphere* [preprint]. [doi:10.5194/egusphere-2025-4940](https://doi.org/10.5194/egusphere-2025-4940).
 
----
 
 ## Overview
 
@@ -34,7 +33,6 @@ The R code in this repository uses the provided data to:
   - **Basin-based cross validation**  
   - **Variable importance assessment**  
 
----
 
 ## Script Structure
 
@@ -44,5 +42,3 @@ The R code in this repository uses the provided data to:
 4. **Step 4:** Cross validation: basin-based CV and visualization of final performance *(Fig. 4a–d)*  
 5. **Step 5:** Variable importance plots, including calculation examples *(Fig. 5)*  
 6. **Step 6:** Visualize partial effects from fitted models *(Fig. 6, 7, 8)*
-
----

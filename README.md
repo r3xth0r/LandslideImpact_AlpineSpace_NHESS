@@ -1,8 +1,17 @@
 # Impact-based Early Warning of Mass Movements
 
-**Repo associated with the paper:**  
-*"Impact-based early warning of mass movements – A dynamic spatial modelling approach for the Alpine region"*  
-DOI: *(will be added as soon as available)*
+This repository supplements the manuscript by
+Stefan Steger<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0003-0886-5191)</sup>,
+Raphael Spiekermann<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-4772-9750)</sup>,
+Mateo Moreno<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-9530-3076)</sup>,
+Sebastian Lehner<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-7562-8172)</sup>,
+Katharina Enigl<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-3263-0918)</sup>,
+Alice Crespi<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0003-4186-8474)</sup>
+and
+Matthias Schlögl<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-4357-523X)</sup>
+(2025):
+**Impact-based early warning of mass movements – A dynamic spatial modelling approach for the Alpine region**.
+*EGUsphere* [preprint]. [doi:10.5194/egusphere-2025-4940](https://doi.org/10.5194/egusphere-2025-4940).
 
 ---
 

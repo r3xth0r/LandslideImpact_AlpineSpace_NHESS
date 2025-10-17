@@ -1,5 +1,14 @@
 # Impact-based Early Warning of Mass Movements
 
+<p align="center">
+    <a href="https://doi.org/10.5194/egusphere-2025-4940">
+        <img alt="Preprint DOI" src="https://img.shields.io/badge/Preprint-10.5194/egusphere--20255--4940-sienna></a>
+    <a href="https://doi.org/10.6084/m9.figshare.30271795.v1">
+        <img alt="Figshare DOI" src="https://img.shields.io/badge/Supplement-m9.figshare.30271795.v1-a60845"></a>
+    <a href="https://style.tidyverse.org">
+        <img alt="Code style: tidyverse" src="https://img.shields.io/badge/codestyle-tidyverse-darkblue"></a>
+</p>
+
 This repository supplements the manuscript by
 Stefan Steger<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0003-0886-5191)</sup>,
 Raphael Spiekermann<sup>[![](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-4772-9750)</sup>,

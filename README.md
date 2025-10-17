@@ -2,7 +2,7 @@
 
 <p align="center">
     <a href="https://doi.org/10.5194/egusphere-2025-4940">
-        <img alt="Preprint DOI" src="https://img.shields.io/badge/Preprint-10.5194/egusphere--20255--4940-sienna></a>
+        <img alt="Preprint DOI" src="https://img.shields.io/badge/Preprint-10.5194/egusphere--20255--4940-sienna"></a>
     <a href="https://doi.org/10.6084/m9.figshare.30271795.v1">
         <img alt="Figshare DOI" src="https://img.shields.io/badge/Supplement-m9.figshare.30271795.v1-a60845"></a>
     <a href="https://style.tidyverse.org">

@@ -650,7 +650,7 @@ print(varimpoDF) # sorted and renamed importance results for flow-types (DF)
 print(varimpoRF) # sorted and renamed importance results for fall-types (RF)
 
 # create plots for variable importance (ggplot2) ====
-p1 <- ggplot(varimpoSL, aes(x = Importance, y = Variable)) +
+p_vi_1 <- ggplot(varimpoSL, aes(x = Importance, y = Variable)) +
   geom_point(color = cols, size = 3) + # point for importance
   geom_errorbarh(aes(xmin = Importance - StDev, xmax = Importance + StDev),
     height = 0.3, color = cols, size = 1
@@ -663,7 +663,7 @@ p1 <- ggplot(varimpoSL, aes(x = Importance, y = Variable)) +
     plot.title = element_text(size = 15, face = "bold")
   )
 
-p2 <- ggplot(varimpoDF, aes(x = Importance, y = Variable)) +
+p_vi_2 <- ggplot(varimpoDF, aes(x = Importance, y = Variable)) +
   geom_point(color = cold, size = 3) +
   geom_errorbarh(aes(xmin = Importance - StDev, xmax = Importance + StDev),
     height = 0.3, color = cold, size = 1
@@ -676,7 +676,7 @@ p2 <- ggplot(varimpoDF, aes(x = Importance, y = Variable)) +
     plot.title = element_text(size = 15, face = "bold")
   )
 
-p3 <- ggplot(varimpoRF, aes(x = Importance, y = Variable)) +
+p_vi_3 <- ggplot(varimpoRF, aes(x = Importance, y = Variable)) +
   geom_point(color = colr, size = 3) +
   geom_errorbarh(aes(xmin = Importance - StDev, xmax = Importance + StDev),
     height = 0.3, color = colr, size = 1
@@ -690,12 +690,12 @@ p3 <- ggplot(varimpoRF, aes(x = Importance, y = Variable)) +
   )
 
 # Tagging the variable importance plots ====
-p1_tagged <- p1 + labs(tag = "a)") # tag for panel referencing in manuscript
-p2_tagged <- p2 + labs(tag = "b)")
-p3_tagged <- p3 + labs(tag = "c)")
+p_vi_1_tagged <- p_vi_1 + labs(tag = "a)") # tag for panel referencing in manuscript
+p_vi_2_tagged <- p_vi_2 + labs(tag = "b)")
+p_vi_3_tagged <- p_vi_3 + labs(tag = "c)")
 
 # Arrange plots vertically, keeping tags (patchwork) ====
-combined_plot <- (p1_tagged) / (p2_tagged) / (p3_tagged) +
+combined_plot <- (p_vi_1_tagged) / (p_vi_2_tagged) / (p_vi_3_tagged) +
   plot_layout(tag_level = "keep") & # keep patchwork tags across panels
   theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1))
 print(combined_plot) # render VI plots (Fig. 5)

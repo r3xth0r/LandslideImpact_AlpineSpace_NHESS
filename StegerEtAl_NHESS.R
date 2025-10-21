@@ -707,15 +707,25 @@ print(combined_plot)
 ## -------------------------------------------------------------------------- ##
 
 # Partial effects created separately for SL, DF, RF using gratia::draw()
-# Partial effect plot for slide-type from fitted model (fit_slides)
-mys <- smooths(fit_slides) # list of smooth terms available in fit_slides
-myselect <- c(mys[1], mys[2], mys[3], mys[4], mys[5], mys[6], mys[7], mys[8]) # indices of smooths to extract (custom selection)
-myselect # print selection to console for verification
+
+# Partial effect plot for slide-type from fitted model `fit_slides` (Fig. 6) ####
+mys <- smooths(fit_slides)
+# indices of smooths to extract (custom selection, first eight elements)
+(myselect <- mys[1:8])
 
 # Define custom labels for each plot
 custom_titles <- c(
-  "Short-term precipitation (mm)", "Antecedent precipitation (mm) — 30 days", "Mean annual precipitation (mm)", "Slope angle (°)", "Number of buildings (log scale)", "Transport infrastructure (coverage %)",
-  "Day-of-Year", "Mean daily temperature (°C)", "Land cover", "Lithology", "Day below 0 °C"
+  "Short-term precipitation (mm)",
+  "Antecedent precipitation (mm) — 30 days",
+  "Mean annual precipitation (mm)",
+  "Slope angle (°)",
+  "Number of buildings (log scale)",
+  "Transport infrastructure (coverage %)",
+  "Day-of-Year",
+  "Mean daily temperature (°C)",
+  "Land cover",
+  "Lithology",
+  "Day below 0 °C"
 )
 
 # Extract individual plots instead of combining into patchwork directly (draw() from gratia)
@@ -742,8 +752,7 @@ plots <- lapply(seq_along(plots), function(i) {
   } # nicer labels for binary factor
   return(p)
 })
-length(plots) # check number of plots produced
-# Tag letters for each plot ====
+
 tags <- letters[1:length(plots)] # generates sequence "a", "b", "c", ...
 plots <- lapply(seq_along(plots), function(i) {
   p <- plots[[i]] +
@@ -762,16 +771,21 @@ plots <- lapply(seq_along(plots), function(i) {
   }
   return(p)
 })
+
 # Combine plots with tags preserved (wrap_plots from patchwork)
 p_SL <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = "keep") # arrange into grid, 4 columns
 print(p_SL) # render slide-type partial effects (Fig. 6)
 
-# Partial effect plot for flow-type from fitted model (fit_flows)
-mys <- smooths(fit_flows)
-mys # show available smooths for flow model
-summary(fit_flows) # model diagnostics reminder
-myselect <- c(mys[1], mys[2], mys[3], mys[4], mys[5], mys[6], mys[7], mys[8]) # selection indices for flow model smooths
-myselect # print selection
+## -------------------------------------------------------------------------- ##
+
+# Partial effect plot for flow-type from fitted model `fit_flows` (Fig. 7)
+(mys <- smooths(fit_flows))
+
+# model diagnostics reminder
+summary(fit_flows)
+
+# selection indices for flow model smooths
+(myselect <- mys[1:8])
 
 # Define custom labels for each plot for flows
 custom_titles <- c(
@@ -803,9 +817,8 @@ plots <- lapply(seq_along(plots), function(i) {
   }
   return(p)
 })
-length(plots) # number of flow plots produced
 
-# Tag letters for Flow-type plots and styling
+# Tag letters for flow-type plots and styling
 tags <- letters[1:length(plots)]
 plots <- lapply(seq_along(plots), function(i) {
   p <- plots[[i]] +
@@ -827,19 +840,30 @@ plots <- lapply(seq_along(plots), function(i) {
 
 # Combine and keep tags for flow plots
 p_DF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = "keep") # 4 columns layout
-print(p_DF) # render flow partials (Fig. 7)
+print(p_DF)
 
-# Partial effect plot for fall-type from fitted model (fit_falls)
-mys <- smooths(fit_falls)
-mys # show available smooths for falls
-summary(fit_falls) # model summary check
-myselect <- c(mys[1], mys[2], mys[3], mys[4], mys[5], mys[6], mys[7], mys[8]) # selection indices for fall model
-myselect # print selected smooths
+## -------------------------------------------------------------------------- ##
+
+# Partial effect plot for fall-type from fitted model `fit_falls` (Fig. 8)
+(mys <- smooths(fit_falls))
+# model summary check
+summary(fit_falls)
+# selection indices for fall model
+(myselect <- mys[1:8])
 
 # Define custom labels for fall plots
 custom_titles <- c(
-  "Short-term precipitation (mm)", "Antecedent precipitation (mm) — 14 days", "Mean annual precipitation (mm)", "Slope angle (°)", "Convergence index", "Bare surface (coverage %)", "Number of buildings (log scale)",
-  "Transport infrastructure (coverage %)", "Land cover", "Lithology", "Day crossing 0 °C"
+  "Short-term precipitation (mm)",
+  "Antecedent precipitation (mm) — 14 days",
+  "Mean annual precipitation (mm)",
+  "Slope angle (°)",
+  "Convergence index",
+  "Bare surface (coverage %)",
+  "Number of buildings (log scale)",
+  "Transport infrastructure (coverage %)",
+  "Land cover",
+  "Lithology",
+  "Day crossing 0 °C"
 )
 
 # Extract partial plots for fall-type model
@@ -867,7 +891,6 @@ plots <- lapply(seq_along(plots), function(i) {
   return(p)
 })
 
-length(plots) # number of fall plots
 # Tag letters for Fall-type plots
 tags <- letters[1:length(plots)]
 plots <- lapply(seq_along(plots), function(i) {
@@ -888,8 +911,8 @@ plots <- lapply(seq_along(plots), function(i) {
   return(p)
 })
 
-# Combine and keep tags for fall-type partials
-p_RF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = "keep") # 4 columns grid
-print(p_RF) # render fall partials (Fig. 8)
+# Combine and keep tags for fall-type partials (4 columns grid)
+p_RF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = "keep")
+print(p_RF)
 
 ## End of script ------------------------------------------------------------ ##

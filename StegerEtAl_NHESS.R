@@ -528,10 +528,12 @@ SLcv_medians <- SLcv |>
   group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
 max_medianSL <- max(SLcv_medians$median_AUROC) # used for title annotation
+
 DFcv_medians <- DFcv |>
   group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
 max_medianDF <- max(DFcv_medians$median_AUROC)
+
 RFcv_medians <- RFcv |>
   group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
@@ -542,9 +544,11 @@ max_medianRF <- max(RFcv_medians$median_AUROC)
 (iqr_DF_21 <- IQR(DFcv$AUROC[DFcv$Formula == "21 days"], na.rm = TRUE)) # Flow-type IQR for 21d
 (iqr_RF_14 <- IQR(RFcv$AUROC[RFcv$Formula == "14 days"], na.rm = TRUE)) # Fall-type IQR for 14d
 
-# Boxplots for each process type with unified theme ====
+## -------------------------------------------------------------------------- ##
+# Create boxplots for each process type with unified theme (Fig. 4) ====
+# SL
 p1 <- ggplot(SLcv, aes(x = Formula, y = AUROC)) +
-  geom_boxplot(fill = cols) + # slide boxplot using predefined color
+  geom_boxplot(fill = cols) +
   labs(
     title = paste0("Slide-type: Predictive performance\nBest: 30 days (median: ", round(max_medianSL, 2), ")"),
     x = "Antecedent precipitation time window",
@@ -553,8 +557,9 @@ p1 <- ggplot(SLcv, aes(x = Formula, y = AUROC)) +
   coord_cartesian(ylim = c(0.725, 0.925)) + # y-limits tuned for visibility across plots
   common_theme
 
+# DF
 p2 <- ggplot(DFcv, aes(x = Formula, y = AUROC)) +
-  geom_boxplot(fill = cold) + # flow boxplot
+  geom_boxplot(fill = cold) +
   labs(
     title = paste0("Flow-type: Predictive performance\nBest: 21 days (median: ", round(max_medianDF, 2), ")"),
     x = "Antecedent precipitation time window",
@@ -563,8 +568,9 @@ p2 <- ggplot(DFcv, aes(x = Formula, y = AUROC)) +
   coord_cartesian(ylim = c(0.725, 0.925)) +
   common_theme
 
+# RF
 p3 <- ggplot(RFcv, aes(x = Formula, y = AUROC)) +
-  geom_boxplot(fill = colr) + # fall boxplot
+  geom_boxplot(fill = colr) +
   labs(
     title = paste0("Fall-type: Predictive performance\nBest: 14 days (median: ", round(max_medianRF, 2), ")"),
     x = "Antecedent precipitation time window",
@@ -573,22 +579,31 @@ p3 <- ggplot(RFcv, aes(x = Formula, y = AUROC)) +
   coord_cartesian(ylim = c(0.725, 0.925)) +
   common_theme
 
-# plot for fitting and predictive performance ====
-mymargin <- theme(plot.margin = unit(c(0.8, 0.8, 0.8, 0.8), "cm")) # top, right, bottom, left margins for consistent spacing
-p_roc <- p_roc + mymargin # apply margin to ROC plot
-p1 <- p1 + mymargin # apply margin to CV plots
+# Plot composition for fitting and predictive performance ====
+
+# Define margin (top, right, bottom, left) for consistent spacing
+mymargin <- theme(plot.margin = unit(c(0.8, 0.8, 0.8, 0.8), "cm"))
+
+# Apply margin to ROC plot and CV plots
+p_roc <- p_roc + mymargin
+p1 <- p1 + mymargin
 p2 <- p2 + mymargin
 p3 <- p3 + mymargin
-p_roc_tagged <- p_roc + labs(tag = "a)") # tag letters for figure panels
+
+# Add tag letters for figure panels
+p_roc_tagged <- p_roc + labs(tag = "a)")
 p1_tagged <- p1 + labs(tag = "b)")
 p2_tagged <- p2 + labs(tag = "c)")
 p3_tagged <- p3 + labs(tag = "d)")
 
-# Combine plots and keep tags using patchwork ====
-combined_plot <- (p_roc_tagged + p1_tagged) / (p2_tagged + p3_tagged) + # 2x2 layout: ROC + p1 top row, p2 + p3 bottom
-  plot_layout(tag_level = "keep") & # keep tags on all panels
-  theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1)) # style tags
-print(combined_plot) # render combined figure (Figure 4)
+# Combine plots and keep tags using patchwork
+# 2x2 layout: ROC + p1 (top row), p2 + p3 (bottom row)
+combined_plot <- (p_roc_tagged + p1_tagged) / (p2_tagged + p3_tagged) +
+  # keep tags on all panels
+  plot_layout(tag_level = "keep") &
+  # style tags
+  theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1))
+print(combined_plot)
 
 
 ## -------------------------------------------------------------------------- ##

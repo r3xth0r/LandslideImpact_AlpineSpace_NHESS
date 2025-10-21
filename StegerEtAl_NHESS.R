@@ -32,6 +32,7 @@ gc()
 # Load packages
 library("mgcv") # fitting GAMs (bam/gam)
 library("dplyr") # data manipulation
+library("purrr") # functional programming
 library("sf") # spatial vector data (simple features)
 library("ggplot2") # plotting
 library("patchwork") # compose ggplots
@@ -51,6 +52,17 @@ cold <- "#9052b6" # color flows-type  models (DF)
 colr <- "#e06c3e" # color fall-type models (RF)
 
 ncores <- 8L
+
+# Custom ggplot theme ====
+common_theme <- theme_minimal(base_size = 12) + # base theme for ggplot
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    panel.border = element_rect(color = "black", fill = NA, size = 0.5) # subtle border for clarity
+  )
 
 ## -------------------------------------------------------------------------- ##
 ## Step 1: Load data ----
@@ -124,7 +136,6 @@ maxk <- 4
 #' - Discrete: 100 (discretize covariates for storage and efficiency reasons)
 #' - Method: "fREML" (fast REML)
 #' - Select: `TRUE` (perform model selection by adding selection penalties to smooth effects)
-#' 
 fit_gamm <- function(formula, data, summary = TRUE, plot = TRUE, ...) {
   bam_model <- mgcv::bam(formula, data = data, family = binomial, discrete = 100, method = "fREML", select = TRUE, ...)
   if (summary) summary(bam_model)
@@ -211,81 +222,141 @@ fit_falls <- fit_gamm(formula = fo_falls, data = df_falls, nthreads = ncores)
 ##         (Fig. 4a in publication)
 ## -------------------------------------------------------------------------- ##
 
-# Argument for averaging out the random effects (bs="re") during prediction (excluding effects)
-myexclude <- c("s(cat)", "s(year)")
+## -------------------------------------------------------------------------- ##
+## Helper functions ====
+## -------------------------------------------------------------------------- ##
 
-# Fitting performance slides ====
-df_slides$probSL <- predict(fit_slides, type = "response", newdata = df_slides, exclude = myexclude) # predict probabilities for training data w/ random effects excluded
-myrocs <- roc(response = df_slides$SL01, predictor = df_slides$probSL, auc = T, ci = T)
-myrocs$auc # roc object and AUC (with CI)
-bestSL <- pROC::coords(myrocs, x = "best", input = "threshold", best.method = "c") # identify "best" threshold (c method = closest to (0,1))
+#' Performance evaluation for GAMM ####
+#'
+#' This function evaluates the performance of a predictive model by computing
+#' the predicted probabilities, generating a Receiver Operating Characteristic
+#' (ROC) curve, calculating the Area Under the Curve (AUC), and identifying the
+#' best threshold for classification.
+#'
+#' @param model A fitted model object. Only tested for `mgcv::bam()`.
+#' @param data A data frame containing the data used for prediction.
+#'   This should include the response variable and any predictors required by the model.
+#' @param response_col A string specifying the name of the column in `data` that
+#'   contains the binary response variable (e.g., 0/1 or TRUE/FALSE).
+#' @param prob_col A string specifying the name of the column where the
+#'   predicted probabilities will be stored in `data`.
+#' @param exclude_terms A character vector specifying terms to average out during prediction.
+#'   Uses the random random effects (`bs = "re"`) `s(cat)` and `s(year)` as default.
+#'
+#' @return A list containing the following elements:
+#' - roc: A `pROC::roc` object representing the ROC curve for the model's predictions.
+#' - auc: A numeric value representing the Area Under the Curve (AUC) of the ROC curve.
+#' - best_threshold: A data frame containing the best threshold for classification, along with its sensitivity and specificity.
+evaluate_performance <- function(model, data, response_col, prob_col, exclude_terms = c("s(cat)", "s(year)")) {
+  # Predict probabilities for training data w/ random effects excluded
+  data[[prob_col]] <- predict(model, type = "response", newdata = data, exclude = exclude_terms)
 
-# Fitting performance flows ====
-df_flows$probDF <- predict(fit_flows, type = "response", newdata = df_flows, exclude = myexclude) # predict for flows
-myrocd <- roc(response = df_flows$DF01, predictor = df_flows$probDF, auc = T, ci = T)
-myrocd$auc # roc object and AUC (with CI)
-bestDF <- pROC::coords(myrocd, x = "best", input = "threshold", best.method = "c") # identify "best" threshold (c method = closest to (0,1))
+  # Compute ROC and AUC
+  roc_obj <- roc(response = data[[response_col]], predictor = data[[prob_col]], auc = TRUE, ci = TRUE)
+  auc_value <- roc_obj$auc
 
-# Fitting performance falls ====
-df_falls$probRF <- predict(fit_falls, type = "response", newdata = df_falls, exclude = myexclude) # predict for falls
-myrocr <- roc(response = df_falls$RF01, predictor = df_falls$probRF, auc = T, ci = T)
-myrocr$auc # roc object and AUC (with CI)
-bestRF <- pROC::coords(myrocr, x = "best", input = "threshold", best.method = "c") # identify "best" threshold (c method = closest to (0,1))
+  # Identify "best" threshold (c method = closest to (0,1))
+  best_threshold <- pROC::coords(roc_obj, x = "best", input = "threshold", best.method = "c")
 
-# Fitting performance plot ROC ====
-# === Labels for AUCs ===
-auc_labels <- data.frame(
-  Process = c("Slide-type", "Flow-type", "Fall-type"), # label/order
-  AUC = c(round(auc(myrocs), 3), round(auc(myrocd), 3), round(auc(myrocr), 3)), # AUC rounded for reporting
-  x = 0.4, y = c(0.15, 0.11, 0.07)
-) # coordinates for annotation
-auc_vals <- setNames(paste0(auc_labels$Process, " (AUC = ", round(auc_labels$AUC, 2), ")"), auc_labels$Process) # label string used in legend
-auc_vals # print to console for quick check
+  # Return results as a list
+  return(list(roc = roc_obj, auc = auc_value, best_threshold = best_threshold))
+}
 
-# === Convert ROC objects to data frames ===
-roc_slide <- data.frame(
-  FPR = 1 - myrocs$specificities, # false positive rate
-  TPR = myrocs$sensitivities, # true positive rate
-  Process = "Slide-type"
-) # label
+## -------------------------------------------------------------------------- ##
 
-roc_flow <- data.frame(
-  FPR = 1 - myrocd$specificities,
-  TPR = myrocd$sensitivities,
-  Process = "Flow-type"
+#' Prepare ROC Data for Plotting ####
+#'
+#' This function converts a `pROC::roc` object into a data frame suitable for plotting,
+#' including the False Positive Rate (FPR), True Positive Rate (TPR), and a process type label.
+#'
+#' @param roc_obj A `pROC::roc` object representing the Receiver Operating Characteristic (ROC) curve.
+#'   This object is typically generated using the `pROC::roc` function.
+#' @param process_name A string specifying the name of the process type associated with the ROC curve.
+#'
+#' @return A data frame with the following columns:
+#' - FPR: False Positive Rate (fall-out, 1 - specificity.
+#' - TPR: True Positive Rate (sensitivity).
+#' - Process: A string indicating the process type.
+prepare_roc_data <- function(roc_obj, process_name) {
+  data.frame(
+    FPR = 1 - roc_obj$specificities, # False positive rate
+    TPR = roc_obj$sensitivities, # True positive rate
+    Process = process_name
+  )
+}
+
+## -------------------------------------------------------------------------- ##
+
+#' Extract Cutpoints for ROC Analysis ####
+#'
+#' This function creates a data frame containing the False Positive Rate (FPR),
+#' True Positive Rate (TPR), and process type name based on the best threshold
+#' identified in a ROC analysis.
+#'
+#' @param best_threshold A data frame or list containing the best threshold information,
+#'   typically obtained using the `pROC::coords` function. It should include `specificity` and `sensitivity` values.
+#' @param process_name A string specifying the name of the process associated with the ROC curve.
+#'
+#' @return A data frame with the following columns:
+#' - FPR: False Positive Rate (fall-out, 1 - specificity.
+#' - TPR: True Positive Rate (sensitivity).
+#' - Process: A string indicating the process type.
+extract_cutpoints <- function(best_threshold, process_name) {
+  data.frame(
+    FPR = 1 - best_threshold$specificity, # FPR at best thresholds
+    TPR = best_threshold$sensitivity, # TPR at best thresholds
+    Process = process_name
+  )
+}
+
+## -------------------------------------------------------------------------- ##
+
+# Define a list of processes with their respective parameters ====
+processes <- tibble(
+  model = list(fit_slides, fit_flows, fit_falls),
+  data = list(df_slides, df_flows, df_falls),
+  response_col = c("SL01", "DF01", "RF01"),
+  prob_col = c("probSL", "probDF", "probRF"),
+  process_name = c("Slide-type", "Flow-type", "Fall-type")
 )
 
-roc_fall <- data.frame(
-  FPR = 1 - myrocr$specificities,
-  TPR = myrocr$sensitivities,
-  Process = "Fall-type"
-)
+# Map fit_performance across all three processes ====
+results <- processes |>
+  mutate(
+    fit_result = pmap(
+      list(model, data, response_col, prob_col),
+      ~ evaluate_performance(..1, ..2, ..3, ..4)
+    ),
+    roc_data = map2(fit_result, process_name, ~ prepare_roc_data(.x$roc, .y)),
+    cutpoint_data = map2(fit_result, process_name, ~ extract_cutpoints(.x$best_threshold, .y))
+  )
 
-roc_all <- bind_rows(roc_slide, roc_flow, roc_fall) # combine ROC curves into one data frame for ggplot
-roc_all$Process <- factor(roc_all$Process, levels = c("Slide-type", "Flow-type", "Fall-type")) # set factor levels for plotting order
+# Extract AUC values and labels ====
+auc_labels <- results |>
+  mutate(
+    Process = process_name,
+    AUC = map_dbl(fit_result, ~ round(.x$auc, 3)),
+    x = 0.4,
+    y = c(0.15, 0.11, 0.07),
+    .keep = "none"
+  )
 
-# === Cutpoints (TPR, FPR) ===
-cutpoints <- data.frame(
-  FPR = c(1 - bestSL$specificity, 1 - bestDF$specificity, 1 - bestRF$specificity), # FPR at best thresholds
-  TPR = c(bestSL$sensitivity, bestDF$sensitivity, bestRF$sensitivity), # TPR at best thresholds
-  Process = c("Slide-type", "Flow-type", "Fall-type")
-)
-cutpoints$Process <- factor(cutpoints$Process, levels = c("Slide-type", "Flow-type", "Fall-type")) # ensure order
-cutpoints # print cutpoints
+auc_vals <- setNames(
+  paste0(auc_labels$Process, " (AUC = ", round(auc_labels$AUC, 2), ")"),
+  auc_labels$Process
+) |>
+  print()
 
-# Define a common theme to unify font sizes, etc. ====
-common_theme <- theme_minimal(base_size = 12) + # base theme for ggplot
-  theme(
-    plot.title = element_text(size = 12, face = "bold"),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 12),
-    legend.text = element_text(size = 12),
-    legend.title = element_text(size = 12),
-    panel.border = element_rect(color = "black", fill = NA, size = 0.5)
-  ) # subtle border for clarity
+# Prepare ROC data and cutpoints for plotting ====
+roc_all <- bind_rows(results$roc_data) |>
+  mutate(Process = factor(Process, levels = auc_labels$Process))
 
-# Build ROC plot ====
-myroc <- ggplot(roc_all, aes(x = FPR, y = TPR, color = Process)) +
+cutpoints <- bind_rows(results$cutpoint_data) |>
+  mutate(Process = factor(Process, levels = auc_labels$Process)) |>
+  print()
+
+# Build ROC plot (Fig 4a) ====
+p_roc <- ggplot(roc_all, aes(x = FPR, y = TPR, color = Process)) +
   geom_line(size = 1) + # ROC curves
   geom_abline(linetype = "dashed", color = "gray60") + # no-skill line
   geom_point(data = cutpoints, aes(x = FPR, y = TPR, color = Process), size = 2) + # best-threshold points
@@ -301,15 +372,14 @@ myroc <- ggplot(roc_all, aes(x = FPR, y = TPR, color = Process)) +
     color = NULL
   ) + # removes legend title (we use labels instead)
   coord_equal() + # equal aspect ratio to avoid distortion
-  common_theme + # apply common theme
+  common_theme +
   theme(
     legend.position = c(0.95, 0.05), # place legend inside plot at bottom-right
     legend.justification = c("right", "bottom"),
     legend.background = element_rect(fill = alpha("white", 0.7), color = NA), # translucent bg for legend
     legend.key.size = unit(1.5, "lines"), legend.text = element_text(size = 12)
   )
-# plot roc
-myroc # render ROC plot (Fig 4a)
+p_roc
 
 
 ## -------------------------------------------------------------------------- ##
@@ -358,12 +428,12 @@ myroc # render ROC plot (Fig 4a)
 #>         myfit,                                # Fitted GAM model
 #>         type = "response",                    # Output predicted probabilities (0–1)
 #>         newdata = test,                       # Data for prediction
-#>         exclude = myexclude)                  # Exclude random effects (as defined above)
-#>       myroc <- roc(                           # Compute ROC using pROC::roc
+#>         exclude = c("s(cat)", "s(year)"))     # Exclude random effects (as defined above)
+#>       p_roc <- roc(                           # Compute ROC using pROC::roc
 #>         response = test$SL01,                 # Binary response
 #>         predictor = test$prob,                # Predicted probabilities
 #>         auc = TRUE)                            # Return AUC value
-#>       auroc <- round(myroc$auc, 5)            # Round AUC
+#>       auroc <- round(p_roc$auc, 5)            # Round AUC
 #>       print(auroc)                            # Print current AUC to console
 #>       results_df_slides <- rbind(             # Append results to a data frame
 #>         results_df_slides,                    # Existing results table
@@ -450,17 +520,17 @@ p3 <- ggplot(RFcv, aes(x = Formula, y = AUROC)) +
 
 # plot for fitting and predictive performance ====
 mymargin <- theme(plot.margin = unit(c(0.8, 0.8, 0.8, 0.8), "cm")) # top, right, bottom, left margins for consistent spacing
-myroc <- myroc + mymargin # apply margin to ROC plot
+p_roc <- p_roc + mymargin # apply margin to ROC plot
 p1 <- p1 + mymargin # apply margin to CV plots
 p2 <- p2 + mymargin
 p3 <- p3 + mymargin
-myroc_tagged <- myroc + labs(tag = "a)") # tag letters for figure panels
+p_roc_tagged <- p_roc + labs(tag = "a)") # tag letters for figure panels
 p1_tagged <- p1 + labs(tag = "b)")
 p2_tagged <- p2 + labs(tag = "c)")
 p3_tagged <- p3 + labs(tag = "d)")
 
 # Combine plots and keep tags using patchwork ====
-combined_plot <- (myroc_tagged + p1_tagged) / (p2_tagged + p3_tagged) + # 2x2 layout: ROC + p1 top row, p2 + p3 bottom
+combined_plot <- (p_roc_tagged + p1_tagged) / (p2_tagged + p3_tagged) + # 2x2 layout: ROC + p1 top row, p2 + p3 bottom
   plot_layout(tag_level = "keep") & # keep tags on all panels
   theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1)) # style tags
 print(combined_plot) # render combined figure (Figure 4)

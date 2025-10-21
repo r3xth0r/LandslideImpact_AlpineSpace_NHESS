@@ -91,7 +91,40 @@ tm_shape(basins) +
 # k-factor to restrict maximum flexibility of smooth terms (keeps smooths conservative/generalized)
 maxk <- 4
 
-# Define formula for slide-type (SL) ====
+fit_gamm <- function(formula, data, summary = TRUE, plot = TRUE) {
+  #' Fit a Generalized Additive Mixed Model (GAMM)
+  #'
+  #' This function fits a Generalized Additive Mixed Model (GAMM) using the `mgcv::bam` function.
+  #' It provides options to print a summary of the model and generate exploratory partial effect plots.
+  #'
+  #' @param formula A formula specifying the model structure.
+  #' @param data A data frame containing the variables used in the model.
+  #' @param summary Logical; if `TRUE` (default), prints a summary of the fitted model.
+  #' @param plot Logical; if `TRUE` (default), generates quick exploratory partial effect plots.
+  #'   This is for exploratory purposes only. For publication-quality plots, consider using `gratia::draw()`.
+  #'
+  #' @return The fitted GAMM model object returned by `mgcv::bam`.
+  #'   If `summary = TRUE`, the model summary is printed to the console.
+  #'   If `plot = TRUE`, exploratory partial effect plots are displayed.
+  #'
+  #' @details
+  #' The function uses the `mgcv::bam` function to fit a GAMM with the following settings:
+  #' - Family: Binomial
+  #' - Discrete: 100 (discretize covariates for storage and efficiency reasons)
+  #' - Method: "fREML" (fast REML)
+  #' - Select: `TRUE` (perform model selection by adding selection penalties to smooth effects)
+  bam_model <- mgcv::bam(formula, data = data, family = binomial, discrete = 100, method = "fREML", select = TRUE)
+  if (summary) summary(bam_model)
+  if (plot) plot(bam_model, pages = 1)
+  return(bam_model)
+}
+
+## -------------------------------------------------------------------------- ##
+
+# Slide-type (SL) model ====
+
+# Define formula for SL ####
+
 fo_slides <-
   SL01 ~ # Binary response variable for slide-type (SL) -- dependent variable in training data
   s(tp_2, k = maxk) + # Short-term precipitation (smoothed)
@@ -108,14 +141,14 @@ fo_slides <-
   s(cat, bs = "re") + # Random effect: Sampling location (Basin-ID) using bs="re"
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
-# Fit the slide type model ====
-fit_slides <- mgcv::bam(fo_slides, data = df_slides, family = binomial, discrete = 100, method = "fREML", select = T) # select=T enables automatic smooth selection
-summary(fit_slides) # check model summary
-plot(fit_slides, pages = 1) # quick partial effect plots (exploratory; use gratia::draw for publication-quality plots --> see Step: 6)
+# Fit the slide type model ####
+fit_slides <- fit_gamm(formula = fo_slides, data = df_slides)
 
 ## -------------------------------------------------------------------------- ##
 
-# Define formula for flow types (DF) ====
+# Flow-type (DF) model ====
+
+# Define formula for DF ####
 fo_flows <-
   DF01 ~ # Response for flow-type (DF) (binary)
   s(tp_2, k = maxk) + # Short term precipitation (smoothed)
@@ -132,14 +165,14 @@ fo_flows <-
   s(cat, bs = "re") + # Random effect: Sampling location (Basin-ID) using bs="re"
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
-# Fit the flow type model ====
-fit_flows <- mgcv::bam(fo_flows, data = df_flows, family = binomial, discrete = 100, method = "fREML", select = T) # select=T enables automatic smooth selection
-summary(fit_flows) # check model summary
-plot(fit_flows, pages = 1) # quick partial effect plots (exploratory; use gratia::draw for publication-quality plots --> see Step: 6)
+# Fit the flow type model ####
+fit_flows <- fit_gamm(formula = fo_flows, data = df_flows)
 
 ## -------------------------------------------------------------------------- ##
 
-# Define formula for fall types (RF) ====
+# Fall-type (RF) model ====
+
+# Define formula for (RF) ####
 fo_falls <-
   RF01 ~ # Response for fall-type (RF) (binary)
   s(tp_2, k = maxk) + # Short term precipitation (smoothed)
@@ -156,10 +189,8 @@ fo_falls <-
   s(cat, bs = "re") + # Random effect: Sampling location (Basin-ID) using bs="re"
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
-# Fit the fall type model ====
-fit_falls <- mgcv::bam(fo_falls, data = df_falls, family = binomial, discrete = 100, method = "fREML", select = T) # select=T enables automatic smooth selection
-summary(fit_falls) # check model summary
-plot(fit_falls, pages = 1) # quick partial effect plots (exploratory; use gratia::draw for publication-quality plots --> see Step: 6)
+# Fit the fall type model ####
+fit_falls <- fit_gamm(formula = fo_falls, data = df_falls)
 
 
 ## -------------------------------------------------------------------------- ##

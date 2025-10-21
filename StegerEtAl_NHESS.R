@@ -15,16 +15,16 @@
 rm(list = ls())
 gc() # clean workspace and run garbage collection to free memory
 # Load packages ---------------------------------------------------------------------------------------
-library(mgcv) # fitting GAMs (bam/gam)
-library(sf) # spatial vector data (simple features)
-library(pROC) # ROC / AUC calculations
-library(gratia) # diagnostic & plotting helpers for GAMs (draw(), smooths(), etc.)
-library(sperrorest) # spatial cross-validation helper (partition_factor_cv)
-library(ggplot2) # plotting
-library(tmap) # thematic mapping for sf objects
-library(dplyr) # data manipulation (select, mutate, %>%)
-library(patchwork) # combine ggplot objects
-library(vip) # variable importance (vi_permute)
+library("mgcv") # fitting GAMs (bam/gam)
+library("sf") # spatial vector data (simple features)
+library("pROC") # ROC / AUC calculations
+library("gratia") # diagnostic & plotting helpers for GAMs (draw(), smooths(), etc.)
+library("sperrorest") # spatial cross-validation helper (partition_factor_cv)
+library("ggplot2") # plotting
+library("tmap") # thematic mapping for sf objects
+library("dplyr") # data manipulation (select, mutate, %>%)
+library("patchwork") # combine ggplot objects
+library("vip") # variable importance (vi_permute)
 #
 ##
 ###

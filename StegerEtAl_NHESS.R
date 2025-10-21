@@ -536,12 +536,12 @@ p3 <- ggplot(varimpoRF, aes(x = Importance, y = Variable)) +
     plot.title = element_text(size = 15, face = "bold")
   )
 
-# --- Tagging the variable importance plots ---
+# Tagging the variable importance plots ====
 p1_tagged <- p1 + labs(tag = "a)") # tag for panel referencing in manuscript
 p2_tagged <- p2 + labs(tag = "b)")
 p3_tagged <- p3 + labs(tag = "c)")
 
-# Arrange plots vertically, keeping tags (patchwork) --------------------------------------------------
+# Arrange plots vertically, keeping tags (patchwork) ====
 combined_plot <- (p1_tagged) / (p2_tagged) / (p3_tagged) +
   plot_layout(tag_level = "keep") & # keep patchwork tags across panels
   theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1))
@@ -571,7 +571,7 @@ plots <- draw(fit_slides,
   return = "list"
 ) # return list of ggplot objects for fine-grained customization
 
-# Post-process plots: apply consistent styling and handle discrete variables ------------------------------------------------
+# Post-process plots: apply consistent styling and handle discrete variables ====
 plots <- lapply(seq_along(plots), function(i) {
   p <- plots[[i]] +
     labs(title = custom_titles[i], x = custom_titles[i]) + # set title & x-label

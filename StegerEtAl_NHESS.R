@@ -649,7 +649,7 @@ print(varimpoSL) # sorted and renamed importance results for slide-types (SL)
 print(varimpoDF) # sorted and renamed importance results for flow-types (DF)
 print(varimpoRF) # sorted and renamed importance results for fall-types (RF)
 
-# create plots for variable importance (ggplot2) ====
+# create plots for variable importance w/ ggplot2 (Fig. 5) ====
 p_vi_1 <- ggplot(varimpoSL, aes(x = Importance, y = Variable)) +
   geom_point(color = cols, size = 3) + # point for importance
   geom_errorbarh(aes(xmin = Importance - StDev, xmax = Importance + StDev),
@@ -689,16 +689,16 @@ p_vi_3 <- ggplot(varimpoRF, aes(x = Importance, y = Variable)) +
     plot.title = element_text(size = 15, face = "bold")
   )
 
-# Tagging the variable importance plots ====
-p_vi_1_tagged <- p_vi_1 + labs(tag = "a)") # tag for panel referencing in manuscript
+# Add tags for subfigures to variable importance plots ====
+p_vi_1_tagged <- p_vi_1 + labs(tag = "a)")
 p_vi_2_tagged <- p_vi_2 + labs(tag = "b)")
 p_vi_3_tagged <- p_vi_3 + labs(tag = "c)")
 
 # Arrange plots vertically, keeping tags (patchwork) ====
 combined_plot <- (p_vi_1_tagged) / (p_vi_2_tagged) / (p_vi_3_tagged) +
-  plot_layout(tag_level = "keep") & # keep patchwork tags across panels
+  plot_layout(tag_level = "keep") &
   theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1))
-print(combined_plot) # render VI plots (Fig. 5)
+print(combined_plot)
 
 
 ## -------------------------------------------------------------------------- ##
@@ -706,7 +706,7 @@ print(combined_plot) # render VI plots (Fig. 5)
 ##         (Fig. 6, Fig. 7, Fig. 8)
 ## -------------------------------------------------------------------------- ##
 
-# Partial effects created separately for SL, DF, RF using gratia::draw
+# Partial effects created separately for SL, DF, RF using gratia::draw()
 # Partial effect plot for slide-type from fitted model (fit_slides)
 mys <- smooths(fit_slides) # list of smooth terms available in fit_slides
 myselect <- c(mys[1], mys[2], mys[3], mys[4], mys[5], mys[6], mys[7], mys[8]) # indices of smooths to extract (custom selection)

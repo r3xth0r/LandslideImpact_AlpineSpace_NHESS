@@ -387,66 +387,96 @@ p_roc
 ##         Snippet code for basin-based CV and visualizing final performance
 ##         (Fig. 4a-d in publication)
 ## -------------------------------------------------------------------------- ##
-
-# This section describes how basin-based cross-validation was performed and provides data and plots
+#
+# This section
+#    - describes how basin-based cross-validation was performed and
+#    - provides data and plots.
 #
 # Description:
-# - The function "partition_factor_cv" (package: sperrorest) was used to create train/test splits based on basin IDs ("cat").
+# - The function "sperrorest::partition_factor_cv()" was used to create
+#   train/test splits based on basin IDs ("cat").
 # - Five folds and ten repetitions were applied.
-# - The process was repeated for each model (slide, flow, fall) and for multiple antecedent precipitation time windows (tp_null, tp_7, tp_14, tp_21, tp_30).
+# - The process was repeated for each model (slide, flow, fall) and for multiple
+#   antecedent precipitation time windows (tp_null, tp_7, tp_14, tp_21, tp_30).
 #
 # Example (commented) usage:
-#>nreps <- 10                                     # Number of repetitions (10x repeated CV)
-#>nfolds <- 5                                     # Number of folds (5-fold CV)
-#> parti <- partition_factor_cv(                  # Function to generate basin-based cross-validation splits
-#>   df_slides,                                   # Input data frame (here slide-type data)
-#>   nfold = nfolds,                              # Number of folds (5-fold CV)
-#>   repetition = nreps,                          # Number of repetitions (10x repeated CV)
-#>   seed1 = 666,                                 # Random seed for reproducibility
-#>   fac = "cat"                                  # Factor variable ("cat") defining basin IDs
-#> )  # Creates a list of partition objects for repeated 5-fold CV
-# Example iteration (commented snippet):
-#>results_df_slides <- data.frame(Formula = character(),Repetition = integer(),Fold = integer(),AUROC = numeric(),stringsAsFactors = FALSE) # Create an empty df to store results
-#> for (formula_name in names(formula_list)) {    # Iterate over each formula (formula_list contain gam-formulas (cf. Step 2) with varying antec. precip. time windows)
-#>   fo <- formula_list[[formula_name]]           # Extract current formula by name
-#>   print(fo)                                    # Print formula to console for tracking progress
-# Loop through repetitions and folds
-#>   for (j in 1:nreps) {                         # Outer loop over number of repetitions
-#>     partiloop <- parti[[j]]                    # Access the j-th partition (one repetition)
-#>     for (i in 1:nfolds) {                      # Inner loop over folds within repetition
-#>       first <- partiloop[[i]][[2]]             # Extract test indices for the i-th fold
-#>       test <- df_slides[first, ]; ntesti <- nrow(test)  # Create test set and count its rows
-#>       train <- df_slides[-first, ]             # Define training data by excluding test indices
-#>       # Fit model and calculate AUROC
-#>       myfit <- mgcv::bam(                     # Fit GAM model using mgcv::bam (fast REML method)
-#>         fo,                                   # Model formula
-#>         data = train,                         # Training data subset
-#>         family = binomial,                    # Binary family for presence/absence
-#>         method = "fREML",                     # Fitting method: fast REML
-#>         discrete = 100)                       # Use discrete approximation (speed optimization)
-#>       test$prob <- predict.gam(               # Predict probabilities on the test set
-#>         myfit,                                # Fitted GAM model
-#>         type = "response",                    # Output predicted probabilities (0–1)
-#>         newdata = test,                       # Data for prediction
-#>         exclude = c("s(cat)", "s(year)"))     # Exclude random effects (as defined above)
-#>       p_roc <- roc(                           # Compute ROC using pROC::roc
-#>         response = test$SL01,                 # Binary response
-#>         predictor = test$prob,                # Predicted probabilities
-#>         auc = TRUE)                            # Return AUC value
-#>       auroc <- round(p_roc$auc, 5)            # Round AUC
-#>       print(auroc)                            # Print current AUC to console
-#>       results_df_slides <- rbind(             # Append results to a data frame
-#>         results_df_slides,                    # Existing results table
-#>         data.frame(                           # Add new row with results for current fold
-#>           Formula = formula_name,             # Formula identifier
-#>           Repetition = j,                     # Current repetition number
-#>           Fold = i,                           # Current fold number
-#>           AUROC = auroc                       # Calculated AUC value
-#>         ))}}}
-#> print(results_df_slides)                      # Display full table of AUROC results
-#> mySLcv_5f_10r <- results_df_slides            # Save cross-validation results object for slides (cf. data loaded in Step 1)
+
+DONTRUN <- TRUE
+
+# styler: off
+if (!DONTRUN) {
+
+  nreps <- 10                                   # Number of repetitions (10x repeated CV)
+  nfolds <- 5                                   # Number of folds (5-fold CV)
+  parti <- partition_factor_cv(                 # Function to generate basin-based cross-validation splits
+    df_slides,                                  # Input data frame (here slide-type data)
+    nfold = nfolds,                             # Number of folds (5-fold CV)
+    repetition = nreps,                         # Number of repetitions (10x repeated CV)
+    seed1 = 666,                                # Random seed for reproducibility
+    fac = "cat"                                 # Factor variable ("cat") defining basin IDs
+  )                                             # Creates a list of partition objects for repeated 5-fold CV
+
+  # Example iteration (commented snippet):
+  results_df_slides <- data.frame(
+    # Create an empty df to store results
+    Formula = character(),
+    Repetition = integer(),
+    Fold = integer(),
+    AUROC = numeric(),
+    stringsAsFactors = FALSE
+  )
+  for (formula_name in names(formula_list)) {   # Iterate over each formula (formula_list contains gam-formulas (cf. Step 2) with varying antec. precip. time windows)
+    fo <- formula_list[[formula_name]]          # Extract current formula by name
+    print(fo)                                   # Print formula to console for tracking progress
+    # Loop through repetitions and folds
+    for (j in 1:nreps) {                        # Outer loop over number of repetitions
+      partiloop <- parti[[j]]                   # Access the j-th partition (one repetition)
+      for (i in 1:nfolds) {                     # Inner loop over folds within repetition
+        first <- partiloop[[i]][[2]]            # Extract test indices for the i-th fold
+        test <- df_slides[first, ]
+        ntesti <- nrow(test)                    # Create test set and count its rows
+        train <- df_slides[-first, ]            # Define training data by excluding test indices
+        # Fit model and calculate AUROC
+        myfit <- mgcv::bam(                     # Fit GAM model using mgcv::bam (fast REML method)
+          fo,                                   # Model formula
+          data = train,                         # Training data subset
+          family = binomial,                    # Binary family for presence/absence
+          method = "fREML",                     # Fitting method: fast REML
+          discrete = 100                        # Use discrete approximation (speed optimization)
+        )
+        test$prob <- predict.gam(               # Predict probabilities on the test set
+          myfit,                                # Fitted GAM model
+          type = "response",                    # Output predicted probabilities (0–1)
+          newdata = test,                       # Data for prediction
+          exclude = c("s(cat)", "s(year)")      # Exclude random effects (as defined above)
+        )
+        p_roc <- roc(                           # Compute ROC using pROC::roc
+          response = test$SL01,                 # Binary response
+          predictor = test$prob,                # Predicted probabilities
+          auc = TRUE                            # Return AUC value
+        )
+        auroc <- round(p_roc$auc, 5)            # Round AUC
+        print(auroc)                            # Print current AUC to console
+        results_df_slides <- rbind(             # Append results to a data frame
+          results_df_slides,                    # Existing results table
+          data.frame(                           # Add new row with results for current fold
+            Formula = formula_name,             # Formula identifier
+            Repetition = j,                     # Current repetition number
+            Fold = i,                           # Current fold number
+            AUROC = auroc                       # Calculated AUC value
+          )
+        )
+      }
+    }
+  }
+  print(results_df_slides)                      # Display full table of AUROC results
+  mySLcv_5f_10r <- results_df_slides            # Save cross-validation results object for slides (cf. data loaded in Step 1)
+}
+# styler: on
+
+# End of cross-validation example.
 # Repeat the same procedure for flows (DF) and falls (RF)
-# --- End of cross-validation example. Below: summarizing final results for all process types.
+# Below: summarizing final results for all process types.
 
 # extract stats from cross-validation outputs (slide / flow / fall) ====
 SLcv |>

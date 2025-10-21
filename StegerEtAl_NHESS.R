@@ -478,25 +478,50 @@ if (!DONTRUN) {
 # Repeat the same procedure for flows (DF) and falls (RF)
 # Below: summarizing final results for all process types.
 
+## -------------------------------------------------------------------------- ##
+
 # extract stats from cross-validation outputs (slide / flow / fall) ====
-SLcv |>
-  group_by(Formula) |>
-  summarise(Mean_AUROC = mean(AUROC), Median_AUROC = median(AUROC), Min_AUROC = min(AUROC), Max_AUROC = max(AUROC), IQR_AUROC = IQR(AUROC)) # slides summary
-DFcv |>
-  group_by(Formula) |>
-  summarise(Mean_AUROC = mean(AUROC), Median_AUROC = median(AUROC), Min_AUROC = min(AUROC), Max_AUROC = max(AUROC), IQR_AUROC = IQR(AUROC)) # flows summary
-RFcv |>
-  group_by(Formula) |>
-  summarise(Mean_AUROC = mean(AUROC), Median_AUROC = median(AUROC), Min_AUROC = min(AUROC), Max_AUROC = max(AUROC), IQR_AUROC = IQR(AUROC)) # falls summary
+
+#' Summarize Cross-Validation Results
+#'
+#' This function calculates summary statistics (mean, median, min, max, and IQR)
+#' for the Area Under the Receiver Operating Characteristic Curve (AUROC)
+#' from cross-validation results, grouped by formula.
+#'
+#' @param data A data frame containing cross-validation results.
+#'   It must include a `Formula` column (grouping variable) and
+#'   an `AUROC` column (numeric values to summarize).
+#'
+#' @return A summarized data frame with the following columns:
+#' - Formula: The formula used in the model (grouping variable).
+#' - Mean_AUROC: The mean AUROC value for each formula.
+#' - Median_AUROC: The median AUROC value for each formula.
+#' - Min_AUROC: The minimum AUROC value for each formula.
+#' - Max_AUROC: The maximum AUROC value for each formula.
+#' - IQR_AUROC: The interquartile range (IQR) of AUROC values for each formula.
+summarize_cv <- function(data, custom_order, custom_labels) {
+  data |>
+    # Convert Formula to factor with custom labels for consistent x-axis labels
+    mutate(Formula = factor(Formula, levels = custom_order, labels = custom_labels)) |>
+    group_by(Formula) |>
+    summarise(
+      Mean_AUROC = mean(AUROC),
+      Median_AUROC = median(AUROC),
+      Min_AUROC = min(AUROC),
+      Max_AUROC = max(AUROC),
+      IQR_AUROC = IQR(AUROC),
+      .groups = "drop" # Avoid grouped output
+    )
+}
 
 # custom ordering / labels for antecedent precipitation windows ====
-custom_order <- c("fo_null", "fo_7", "fo_14", "fo_21", "fo_30") # Replace with order for plotting
-custom_labels <- c("Null", "7 days", "14 days", "21 days", "30 days") # Labels shown on plots
+custom_order <- c("fo_null", "fo_7", "fo_14", "fo_21", "fo_30")
+custom_labels <- c("Null", "7 days", "14 days", "21 days", "30 days")
 
-# Convert Formula to factor with custom labels for consistent x-axis labels ====
-SLcv$Formula <- factor(SLcv$Formula, levels = custom_order, labels = custom_labels)
-DFcv$Formula <- factor(DFcv$Formula, levels = custom_order, labels = custom_labels)
-RFcv$Formula <- factor(RFcv$Formula, levels = custom_order, labels = custom_labels)
+# Summarize cross-validation results for slides, flows, and falls ====
+SLcv_summary <- summarize_cv(SLcv, custom_order, custom_labels)
+DFcv_summary <- summarize_cv(DFcv, custom_order, custom_labels)
+RFcv_summary <- summarize_cv(RFcv, custom_order, custom_labels)
 
 # Compute median AUROC per group ====
 SLcv_medians <- SLcv |>

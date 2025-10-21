@@ -449,14 +449,14 @@ p_roc
 # --- End of cross-validation example. Below: summarizing final results for all process types.
 
 # extract stats from cross-validation outputs (slide / flow / fall) ====
-SLcv %>%
-  group_by(Formula) %>%
+SLcv |>
+  group_by(Formula) |>
   summarise(Mean_AUROC = mean(AUROC), Median_AUROC = median(AUROC), Min_AUROC = min(AUROC), Max_AUROC = max(AUROC), IQR_AUROC = IQR(AUROC)) # slides summary
-DFcv %>%
-  group_by(Formula) %>%
+DFcv |>
+  group_by(Formula) |>
   summarise(Mean_AUROC = mean(AUROC), Median_AUROC = median(AUROC), Min_AUROC = min(AUROC), Max_AUROC = max(AUROC), IQR_AUROC = IQR(AUROC)) # flows summary
-RFcv %>%
-  group_by(Formula) %>%
+RFcv |>
+  group_by(Formula) |>
   summarise(Mean_AUROC = mean(AUROC), Median_AUROC = median(AUROC), Min_AUROC = min(AUROC), Max_AUROC = max(AUROC), IQR_AUROC = IQR(AUROC)) # falls summary
 
 # custom ordering / labels for antecedent precipitation windows ====
@@ -469,16 +469,16 @@ DFcv$Formula <- factor(DFcv$Formula, levels = custom_order, labels = custom_labe
 RFcv$Formula <- factor(RFcv$Formula, levels = custom_order, labels = custom_labels)
 
 # Compute median AUROC per group ====
-SLcv_medians <- SLcv %>%
-  group_by(Formula) %>%
+SLcv_medians <- SLcv |>
+  group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
 max_medianSL <- max(SLcv_medians$median_AUROC) # used for title annotation
-DFcv_medians <- DFcv %>%
-  group_by(Formula) %>%
+DFcv_medians <- DFcv |>
+  group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
 max_medianDF <- max(DFcv_medians$median_AUROC)
-RFcv_medians <- RFcv %>%
-  group_by(Formula) %>%
+RFcv_medians <- RFcv |>
+  group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
 max_medianRF <- max(RFcv_medians$median_AUROC)
 
@@ -548,8 +548,8 @@ mynsim <- 5 # set the number of permutations per variable (set to 100 in origina
 set.seed(1) # reproducible permutations
 # Select the relevant columns from fitted model
 cn_s <- colnames(fit_slides$model)
-train_sel_s <- df_slides %>%
-  dplyr::select(any_of(cn_s)) %>% # select columns used in model
+train_sel_s <- df_slides |>
+  dplyr::select(any_of(cn_s)) |> # select columns used in model
   dplyr::select(-SL01) # drop response from training set used for vi_permute
 # Define the target variable
 target_s <- as.factor(df_slides$SL01) # binary response
@@ -563,12 +563,12 @@ result_s <- vi_permute(
   event_level = "second", # which factor level is event (depending on factor coding)
   metric = "roc_auc", # metric to evaluate (AUROC)
   pred_wrapper = predict.bam # use predict.bam as wrapper for consistency
-) %>%
-  dplyr::arrange(-Importance) %>% # sort by decreasing importance
+) |>
+  dplyr::arrange(-Importance) |> # sort by decreasing importance
   dplyr::mutate(process = "Slide-type") # annotate process type
 
 # Optionally drop random effect variables from importance table
-result_s <- result_s %>%
+result_s <- result_s |>
   dplyr::filter(!(Variable %in% c("cat", "year"))) # remove random effect vars since permuting them is not meaningful
 print(result_s) # print slide VI results (use in SI or checks)
 # repeat for flow-types and fall-types and create "varimpo" data (increase mynsim beforehand)

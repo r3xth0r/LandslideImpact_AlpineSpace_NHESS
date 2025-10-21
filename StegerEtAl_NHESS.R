@@ -357,7 +357,7 @@ cutpoints <- bind_rows(results$cutpoint_data) |>
 
 # Build ROC plot (Fig 4a) ====
 p_roc <- ggplot(roc_all, aes(x = FPR, y = TPR, color = Process)) +
-  geom_line(size = 1) + # ROC curves
+  geom_line(linewidth = 1) + # ROC curves
   geom_abline(linetype = "dashed", color = "gray60") + # no-skill line
   geom_point(data = cutpoints, aes(x = FPR, y = TPR, color = Process), size = 2) + # best-threshold points
   scale_color_manual(

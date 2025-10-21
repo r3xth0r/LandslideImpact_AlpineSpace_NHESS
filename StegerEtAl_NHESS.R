@@ -95,31 +95,38 @@ tm_shape(basins) +
 ## Step 2: Fit the models ----
 ## -------------------------------------------------------------------------- ##
 
+## Config ====
+
 # k-factor to restrict maximum flexibility of smooth terms (keeps smooths conservative/generalized)
 maxk <- 4
 
+## -------------------------------------------------------------------------- ##
+## Helper functions ====
+## -------------------------------------------------------------------------- ##
+
+#' Fit a Generalized Additive Mixed Model (GAMM)
+#'
+#' This function fits a Generalized Additive Mixed Model (GAMM) using the `mgcv::bam` function.
+#' It provides options to print a summary of the model and generate exploratory partial effect plots.
+#'
+#' @param formula A formula specifying the model structure.
+#' @param data A data frame containing the variables used in the model.
+#' @param summary Logical; if `TRUE` (default), prints a summary of the fitted model.
+#' @param plot Logical; if `TRUE` (default), generates quick exploratory partial effect plots.
+#'   This is for exploratory purposes only. For publication-quality plots, consider using `gratia::draw()`.
+#'
+#' @return The fitted GAMM model object returned by `mgcv::bam`.
+#'   If `summary = TRUE`, the model summary is printed to the console.
+#'   If `plot = TRUE`, exploratory partial effect plots are displayed.
+#'
+#' @details
+#' The function uses the `mgcv::bam` function to fit a GAMM with the following settings:
+#' - Family: Binomial
+#' - Discrete: 100 (discretize covariates for storage and efficiency reasons)
+#' - Method: "fREML" (fast REML)
+#' - Select: `TRUE` (perform model selection by adding selection penalties to smooth effects)
+#' 
 fit_gamm <- function(formula, data, summary = TRUE, plot = TRUE, ...) {
-  #' Fit a Generalized Additive Mixed Model (GAMM)
-  #'
-  #' This function fits a Generalized Additive Mixed Model (GAMM) using the `mgcv::bam` function.
-  #' It provides options to print a summary of the model and generate exploratory partial effect plots.
-  #'
-  #' @param formula A formula specifying the model structure.
-  #' @param data A data frame containing the variables used in the model.
-  #' @param summary Logical; if `TRUE` (default), prints a summary of the fitted model.
-  #' @param plot Logical; if `TRUE` (default), generates quick exploratory partial effect plots.
-  #'   This is for exploratory purposes only. For publication-quality plots, consider using `gratia::draw()`.
-  #'
-  #' @return The fitted GAMM model object returned by `mgcv::bam`.
-  #'   If `summary = TRUE`, the model summary is printed to the console.
-  #'   If `plot = TRUE`, exploratory partial effect plots are displayed.
-  #'
-  #' @details
-  #' The function uses the `mgcv::bam` function to fit a GAMM with the following settings:
-  #' - Family: Binomial
-  #' - Discrete: 100 (discretize covariates for storage and efficiency reasons)
-  #' - Method: "fREML" (fast REML)
-  #' - Select: `TRUE` (perform model selection by adding selection penalties to smooth effects)
   bam_model <- mgcv::bam(formula, data = data, family = binomial, discrete = 100, method = "fREML", select = TRUE, ...)
   if (summary) summary(bam_model)
   if (plot) plot(bam_model, pages = 1)

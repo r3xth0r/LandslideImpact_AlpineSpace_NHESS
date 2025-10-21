@@ -51,6 +51,7 @@ cols <- "#56b899" # color slide-type models (SL)
 cold <- "#9052b6" # color flows-type  models (DF)
 colr <- "#e06c3e" # color fall-type models (RF)
 
+ncores <- 8L
 
 ## -------------------------------------------------------------------------- ##
 ## Step 1: Load data ----
@@ -97,7 +98,7 @@ tm_shape(basins) +
 # k-factor to restrict maximum flexibility of smooth terms (keeps smooths conservative/generalized)
 maxk <- 4
 
-fit_gamm <- function(formula, data, summary = TRUE, plot = TRUE) {
+fit_gamm <- function(formula, data, summary = TRUE, plot = TRUE, ...) {
   #' Fit a Generalized Additive Mixed Model (GAMM)
   #'
   #' This function fits a Generalized Additive Mixed Model (GAMM) using the `mgcv::bam` function.
@@ -119,7 +120,7 @@ fit_gamm <- function(formula, data, summary = TRUE, plot = TRUE) {
   #' - Discrete: 100 (discretize covariates for storage and efficiency reasons)
   #' - Method: "fREML" (fast REML)
   #' - Select: `TRUE` (perform model selection by adding selection penalties to smooth effects)
-  bam_model <- mgcv::bam(formula, data = data, family = binomial, discrete = 100, method = "fREML", select = TRUE)
+  bam_model <- mgcv::bam(formula, data = data, family = binomial, discrete = 100, method = "fREML", select = TRUE, ...)
   if (summary) summary(bam_model)
   if (plot) plot(bam_model, pages = 1)
   return(bam_model)
@@ -148,7 +149,7 @@ fo_slides <-
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
 # Fit the slide type model ####
-fit_slides <- fit_gamm(formula = fo_slides, data = df_slides)
+fit_slides <- fit_gamm(formula = fo_slides, data = df_slides, nthreads = ncores)
 
 ## -------------------------------------------------------------------------- ##
 
@@ -172,7 +173,7 @@ fo_flows <-
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
 # Fit the flow type model ####
-fit_flows <- fit_gamm(formula = fo_flows, data = df_flows)
+fit_flows <- fit_gamm(formula = fo_flows, data = df_flows, nthreads = ncores)
 
 ## -------------------------------------------------------------------------- ##
 
@@ -196,7 +197,7 @@ fo_falls <-
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
 # Fit the fall type model ####
-fit_falls <- fit_gamm(formula = fo_falls, data = df_falls)
+fit_falls <- fit_gamm(formula = fo_falls, data = df_falls, nthreads = ncores)
 
 
 ## -------------------------------------------------------------------------- ##

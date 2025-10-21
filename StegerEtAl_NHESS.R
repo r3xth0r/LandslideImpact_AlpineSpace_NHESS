@@ -1,10 +1,13 @@
-# Script associated with the paper: "Impact-based early warning of mass movements – A dynamic spatial modelling approach for the Alpine region"
-# doi:
+## -------------------------------------------------------------------------- ##
+# Script associated with Steger et al. (2025):
+# "Impact-based early warning of mass movements – A dynamic spatial modelling approach for the Alpine region"
+# doi: https://doi.org/10.5194/egusphere-2025-4940
+## -------------------------------------------------------------------------- ##
 
 # The R code uses data from the repository to fit and analyze the models and to visualize data and results.
 # It also contains code snippets on how certain anlayses (e.g. basin-based cross validation, variable importance) were performed
 #
-## Structure of the script
+# Structure of the script
 # Step 1: Load data and basic visualizations
 # Step 2: Fit the models
 # Step 3: Calculate fitting performance and plot ROC curves (Fig. 4a in publication)
@@ -12,9 +15,15 @@
 # Step 5: Variable importance plots (incl. snippet code for calculating feature importance) (Fig. 5)
 # Step 6: Visualizing partial effects from fitted models (Fig. 6, Fig. 7, Fig. 8)
 
+## -------------------------------------------------------------------------- ##
+## Setup ----
+## -------------------------------------------------------------------------- ##
+
+# clean workspace and run garbage collection to free memory
 rm(list = ls())
-gc() # clean workspace and run garbage collection to free memory
-# Load packages ---------------------------------------------------------------------------------------
+gc()
+
+# Load packages
 library("mgcv") # fitting GAMs (bam/gam)
 library("sf") # spatial vector data (simple features)
 library("pROC") # ROC / AUC calculations
@@ -25,18 +34,25 @@ library("tmap") # thematic mapping for sf objects
 library("dplyr") # data manipulation (select, mutate, %>%)
 library("patchwork") # combine ggplot objects
 library("vip") # variable importance (vi_permute)
-#
-##
-###
-##########
-########## Step 1: Load data ----------------------------------------------------------------------------------
-##########
-###
-##
-#
 
-# Load each object (readRDS used for reproducible storage of R objects) --------------------------------
-basins <- readRDS("data/basins_compressed.rds") # Basins with static data (sf object) -- polygons with attributes
+
+## -------------------------------------------------------------------------- ##
+## Config ----
+## -------------------------------------------------------------------------- ##
+
+# Colors for plots
+cols <- "#56b899" # color slide-type models (SL)
+cold <- "#9052b6" # color flows-type  models (DF)
+colr <- "#e06c3e" # color fall-type models (RF)
+
+
+## -------------------------------------------------------------------------- ##
+## Step 1: Load data ----
+## -------------------------------------------------------------------------- ##
+
+# Load preprocessed input data
+
+basins <- readRDS("data/basins_compressed.rds") # Basins with static data (sf) -- polygons with attributes
 AS <- readRDS("data/Alpine_Space_Boundary_4326.rds") # Alpine Space outline (sf)
 df_slides <- readRDS("data/df_slides.rds") # Training data for slide-type (SL) model
 df_flows <- readRDS("data/df_flows.rds") # Training data for flow-type (DF) model
@@ -49,34 +65,33 @@ varimpoSL <- readRDS("data/varimpoSL.rds") # Plot-ready variable importance data
 varimpoDF <- readRDS("data/varimpoDF.rds") # Plot-ready variable importance data for flow-type (DF)
 varimpoRF <- readRDS("data/varimpoRF.rds") # Plot-ready variable importance data for fall-type (RF)
 
-# Colors for plots -----------------------------------------------------------------------------------
-cols <- "#56b899" # color slide-type models (SL)
-cold <- "#9052b6" # color flows-type  models (DF)
-colr <- "#e06c3e" # color fall-type models (RF)
+# Example: Alpine Space outline map
+tm_shape(AS) +
+  tm_fill(col = "lightgrey") +
+  tm_borders(col = "black", lwd = 2) +
+  tm_title("Alpine Space Boundary")
 
-# Example: Alpine Space outline map --------------------------------------------
-tm_shape(AS) + tm_fill(col = "lightgrey") + tm_borders(col = "black", lwd = 2) + tm_title("Alpine Space Boundary")
-
-# Example plot for basins: Mean slope angles in the respective PPAs -----------------------------------
-# "Missing" (NA) means no PPA pixel in the entire basin; facets show SL, DF, RF slope maps
-# Basin polygons are filled without outlines; use tm_polygons() for visualizing borders.
+# Example plot for basins:
+#     - Mean slope angles in the respective PPAs
+#     - "Missing" (NA) means no PPA pixel in the entire basin;
+#     - Facets show slope maps for slides (SL), flows (DF) and falls (RF), respectively
+#     - Basin polygons are filled without outlines; use tm_polygons() for visualizing borders
 tm_shape(basins) +
-  tm_fill(c("SL_Slope", "DF_Slope", "RF_Slope"), # Slides (SL), Flows (DF), Falls (RF)  -- plot three attributes
+  tm_fill(c("SL_Slope", "DF_Slope", "RF_Slope"),
     fill.scale = tm_scale(values = c("#d7f4be", "#f0d076", "#e73030")),
     fill.legend = tm_legend(title = "Mean slope in PPA"), fill.free = FALSE
   ) +
   tm_facets(ncol = 1)
-##
-###
-##########
-########## Step 2: Fit the models ----------------------------------------------------------------------------------
-##########
-###
-##
-#
-maxk <- 4 # k-factor to restrict maximum flexibility of smooth terms (keeps smooths conservative/generalized)
 
-# Define formula for slide-type (SL) ------------------------------------------------------------------
+
+## -------------------------------------------------------------------------- ##
+## Step 2: Fit the models ----
+## -------------------------------------------------------------------------- ##
+
+# k-factor to restrict maximum flexibility of smooth terms (keeps smooths conservative/generalized)
+maxk <- 4
+
+# Define formula for slide-type (SL) ====
 fo_slides <-
   SL01 ~ # Binary response variable for slide-type (SL) -- dependent variable in training data
   s(tp_2, k = maxk) + # Short-term precipitation (smoothed)
@@ -93,12 +108,14 @@ fo_slides <-
   s(cat, bs = "re") + # Random effect: Sampling location (Basin-ID) using bs="re"
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
-# Fit the slide type model ----------------------------------------------------------------------------
+# Fit the slide type model ====
 fit_slides <- mgcv::bam(fo_slides, data = df_slides, family = binomial, discrete = 100, method = "fREML", select = T) # select=T enables automatic smooth selection
 summary(fit_slides) # check model summary
 plot(fit_slides, pages = 1) # quick partial effect plots (exploratory; use gratia::draw for publication-quality plots --> see Step: 6)
 
-# Define formula for flow types (DF) -------------------------------------------------------------------
+## -------------------------------------------------------------------------- ##
+
+# Define formula for flow types (DF) ====
 fo_flows <-
   DF01 ~ # Response for flow-type (DF) (binary)
   s(tp_2, k = maxk) + # Short term precipitation (smoothed)
@@ -115,12 +132,14 @@ fo_flows <-
   s(cat, bs = "re") + # Random effect: Sampling location (Basin-ID) using bs="re"
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
-# Fit the flow type model ---------------------------------------------------------------------------
+# Fit the flow type model ====
 fit_flows <- mgcv::bam(fo_flows, data = df_flows, family = binomial, discrete = 100, method = "fREML", select = T) # select=T enables automatic smooth selection
 summary(fit_flows) # check model summary
 plot(fit_flows, pages = 1) # quick partial effect plots (exploratory; use gratia::draw for publication-quality plots --> see Step: 6)
 
-# Define formula for fall types (RF) -------------------------------------------------------------------
+## -------------------------------------------------------------------------- ##
+
+# Define formula for fall types (RF) ====
 fo_falls <-
   RF01 ~ # Response for fall-type (RF) (binary)
   s(tp_2, k = maxk) + # Short term precipitation (smoothed)
@@ -137,40 +156,39 @@ fo_falls <-
   s(cat, bs = "re") + # Random effect: Sampling location (Basin-ID) using bs="re"
   s(year, bs = "re") # Random effect: Sampling Year using bs="re"
 
-# Fit the fall type model ---------------------------------------------------------------------------
+# Fit the fall type model ====
 fit_falls <- mgcv::bam(fo_falls, data = df_falls, family = binomial, discrete = 100, method = "fREML", select = T) # select=T enables automatic smooth selection
 summary(fit_falls) # check model summary
 plot(fit_falls, pages = 1) # quick partial effect plots (exploratory; use gratia::draw for publication-quality plots --> see Step: 6)
-#
-##
-###
-##########
-########## Step 3:  Calculate fitting performance and plot ROC curves (Fig. 4a in publication) ----------------------------------------------------------------------------------
-##########
-###
-##
-#
-myexclude <- c("s(cat)", "s(year)") # Argument for averaging out the random effects (bs="re") during prediction (excluding effects)
 
-# Fitting performance slides ----------------------------------------------------------------------------
+
+## -------------------------------------------------------------------------- ##
+## Step 3: Calculate fitting performance and plot ROC curves ----
+##         (Fig. 4a in publication)
+## -------------------------------------------------------------------------- ##
+
+# Argument for averaging out the random effects (bs="re") during prediction (excluding effects)
+myexclude <- c("s(cat)", "s(year)")
+
+# Fitting performance slides ====
 df_slides$probSL <- predict(fit_slides, type = "response", newdata = df_slides, exclude = myexclude) # predict probabilities for training data w/ random effects excluded
 myrocs <- roc(response = df_slides$SL01, predictor = df_slides$probSL, auc = T, ci = T)
 myrocs$auc # roc object and AUC (with CI)
 bestSL <- pROC::coords(myrocs, x = "best", input = "threshold", best.method = "c") # identify "best" threshold (c method = closest to (0,1))
 
-# Fitting performance flows ----------------------------------------------------------------------------
+# Fitting performance flows ====
 df_flows$probDF <- predict(fit_flows, type = "response", newdata = df_flows, exclude = myexclude) # predict for flows
 myrocd <- roc(response = df_flows$DF01, predictor = df_flows$probDF, auc = T, ci = T)
 myrocd$auc # roc object and AUC (with CI)
 bestDF <- pROC::coords(myrocd, x = "best", input = "threshold", best.method = "c") # identify "best" threshold (c method = closest to (0,1))
 
-# Fitting performance falls ----------------------------------------------------------------------------
+# Fitting performance falls ====
 df_falls$probRF <- predict(fit_falls, type = "response", newdata = df_falls, exclude = myexclude) # predict for falls
 myrocr <- roc(response = df_falls$RF01, predictor = df_falls$probRF, auc = T, ci = T)
 myrocr$auc # roc object and AUC (with CI)
 bestRF <- pROC::coords(myrocr, x = "best", input = "threshold", best.method = "c") # identify "best" threshold (c method = closest to (0,1))
 
-# Fitting performance plot ROC ----------------------------------------------------------------------------
+# Fitting performance plot ROC ====
 # === Labels for AUCs ===
 auc_labels <- data.frame(
   Process = c("Slide-type", "Flow-type", "Fall-type"), # label/order
@@ -210,7 +228,8 @@ cutpoints <- data.frame(
 )
 cutpoints$Process <- factor(cutpoints$Process, levels = c("Slide-type", "Flow-type", "Fall-type")) # ensure order
 cutpoints # print cutpoints
-# Define a common theme to unify font sizes, etc. -----------------------------------------------------
+
+# Define a common theme to unify font sizes, etc. ====
 common_theme <- theme_minimal(base_size = 12) + # base theme for ggplot
   theme(
     plot.title = element_text(size = 12, face = "bold"),
@@ -221,7 +240,7 @@ common_theme <- theme_minimal(base_size = 12) + # base theme for ggplot
     panel.border = element_rect(color = "black", fill = NA, size = 0.5)
   ) # subtle border for clarity
 
-# Build ROC plot ---------------------------------------------------------------------------------------
+# Build ROC plot ====
 myroc <- ggplot(roc_all, aes(x = FPR, y = TPR, color = Process)) +
   geom_line(size = 1) + # ROC curves
   geom_abline(linetype = "dashed", color = "gray60") + # no-skill line
@@ -247,15 +266,14 @@ myroc <- ggplot(roc_all, aes(x = FPR, y = TPR, color = Process)) +
   )
 # plot roc
 myroc # render ROC plot (Fig 4a)
-#
-##
-###
-##########
-########## Step 4: Cross validation: Snippet code for basin-based cross validation and visualizing final performance (Fig. 4a-d in publication) ----------------------------------------------------------------------------------
-##########
-###
-##
-#
+
+
+## -------------------------------------------------------------------------- ##
+## Step 4: Cross validation ----
+##         Snippet code for basin-based CV and visualizing final performance
+##         (Fig. 4a-d in publication)
+## -------------------------------------------------------------------------- ##
+
 # This section describes how basin-based cross-validation was performed and provides data and plots
 #
 # Description:
@@ -316,7 +334,7 @@ myroc # render ROC plot (Fig 4a)
 # Repeat the same procedure for flows (DF) and falls (RF)
 # --- End of cross-validation example. Below: summarizing final results for all process types.
 
-# extract stats from cross-validation outputs (slide / flow / fall) ------------------------------------
+# extract stats from cross-validation outputs (slide / flow / fall) ====
 SLcv %>%
   group_by(Formula) %>%
   summarise(Mean_AUROC = mean(AUROC), Median_AUROC = median(AUROC), Min_AUROC = min(AUROC), Max_AUROC = max(AUROC), IQR_AUROC = IQR(AUROC)) # slides summary
@@ -327,16 +345,16 @@ RFcv %>%
   group_by(Formula) %>%
   summarise(Mean_AUROC = mean(AUROC), Median_AUROC = median(AUROC), Min_AUROC = min(AUROC), Max_AUROC = max(AUROC), IQR_AUROC = IQR(AUROC)) # falls summary
 
-# custom ordering / labels for antecedent precipitation windows ---------------------------------------
+# custom ordering / labels for antecedent precipitation windows ====
 custom_order <- c("fo_null", "fo_7", "fo_14", "fo_21", "fo_30") # Replace with order for plotting
 custom_labels <- c("Null", "7 days", "14 days", "21 days", "30 days") # Labels shown on plots
 
-# Convert Formula to factor with custom labels for consistent x-axis labels ----------------------------
+# Convert Formula to factor with custom labels for consistent x-axis labels ====
 SLcv$Formula <- factor(SLcv$Formula, levels = custom_order, labels = custom_labels)
 DFcv$Formula <- factor(DFcv$Formula, levels = custom_order, labels = custom_labels)
 RFcv$Formula <- factor(RFcv$Formula, levels = custom_order, labels = custom_labels)
 
-# Compute median AUROC per group ----------------------------------------------------------------------------
+# Compute median AUROC per group ====
 SLcv_medians <- SLcv %>%
   group_by(Formula) %>%
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
@@ -350,12 +368,12 @@ RFcv_medians <- RFcv %>%
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
 max_medianRF <- max(RFcv_medians$median_AUROC)
 
-# IQR metrics used in text or figure annotations -------------------------------------------------------
+# IQR metrics used in text or figure annotations ====
 (iqr_SL_30 <- IQR(SLcv$AUROC[SLcv$Formula == "30 days"], na.rm = TRUE)) # Slide-type IQR for 30d formula
 (iqr_DF_21 <- IQR(DFcv$AUROC[DFcv$Formula == "21 days"], na.rm = TRUE)) # Flow-type IQR for 21d
 (iqr_RF_14 <- IQR(RFcv$AUROC[RFcv$Formula == "14 days"], na.rm = TRUE)) # Fall-type IQR for 14d
 
-# Boxplots for each process type with unified theme ----------------------------------------------------
+# Boxplots for each process type with unified theme ====
 p1 <- ggplot(SLcv, aes(x = Formula, y = AUROC)) +
   geom_boxplot(fill = cols) + # slide boxplot using predefined color
   labs(
@@ -386,7 +404,7 @@ p3 <- ggplot(RFcv, aes(x = Formula, y = AUROC)) +
   coord_cartesian(ylim = c(0.725, 0.925)) +
   common_theme
 
-## plot for fitting and predictive performance ---------------------------------------------------------
+# plot for fitting and predictive performance ====
 mymargin <- theme(plot.margin = unit(c(0.8, 0.8, 0.8, 0.8), "cm")) # top, right, bottom, left margins for consistent spacing
 myroc <- myroc + mymargin # apply margin to ROC plot
 p1 <- p1 + mymargin # apply margin to CV plots
@@ -397,20 +415,19 @@ p1_tagged <- p1 + labs(tag = "b)")
 p2_tagged <- p2 + labs(tag = "c)")
 p3_tagged <- p3 + labs(tag = "d)")
 
-# Combine plots and keep tags using patchwork ----------------------------------------------------------
+# Combine plots and keep tags using patchwork ====
 combined_plot <- (myroc_tagged + p1_tagged) / (p2_tagged + p3_tagged) + # 2x2 layout: ROC + p1 top row, p2 + p3 bottom
   plot_layout(tag_level = "keep") & # keep tags on all panels
   theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1)) # style tags
 print(combined_plot) # render combined figure (Figure 4)
-#
-##
-###
-##########
-########## Step 5: Variable importance plots (incl. snippet code for calculating feature importance) (Fig. 5) ----------------------------------------------------------------------------------
-##########
-###
-##
-#
+
+
+## -------------------------------------------------------------------------- ##
+## Step 5: Variable importance plots ----
+##         (incl. snippet code for calculating feature importance)
+##         (Fig. 5)
+## -------------------------------------------------------------------------- ##
+
 # Snippet code for slide-type models (SL) -- permutation importance via vip::vi_permute (for fast demo nsim small)
 mynsim <- 5 # set the number of permutations per variable (set to 100 in original publication -> slow)
 
@@ -442,13 +459,13 @@ result_s <- result_s %>%
 print(result_s) # print slide VI results (use in SI or checks)
 # repeat for flow-types and fall-types and create "varimpo" data (increase mynsim beforehand)
 
-# Print raw and processed importance outputs ----------------------------------------------------------------
+# Print raw and processed importance outputs ====
 print(varimpo_raw, n = 33) # raw results
 print(varimpoSL) # sorted and renamed importance results for slide-types (SL)
 print(varimpoDF) # sorted and renamed importance results for flow-types (DF)
 print(varimpoRF) # sorted and renamed importance results for fall-types (RF)
 
-# create plots for variable importance (ggplot2) -------------------------------------------------------
+# create plots for variable importance (ggplot2) ====
 p1 <- ggplot(varimpoSL, aes(x = Importance, y = Variable)) +
   geom_point(color = cols, size = 3) + # point for importance
   geom_errorbarh(aes(xmin = Importance - StDev, xmax = Importance + StDev),
@@ -498,15 +515,13 @@ combined_plot <- (p1_tagged) / (p2_tagged) / (p3_tagged) +
   plot_layout(tag_level = "keep") & # keep patchwork tags across panels
   theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1))
 print(combined_plot) # render VI plots (Fig. 5)
-#
-##
-###
-##########
-########## Step 6: Visualizing partial effects from fitted models (Fig. 6, Fig. 7, Fig. 8) ----------------------------------------------------------------------------------
-##########
-###
-##
-#
+
+
+## -------------------------------------------------------------------------- ##
+## Step 6: Visualizing partial effects from fitted models ----
+##         (Fig. 6, Fig. 7, Fig. 8)
+## -------------------------------------------------------------------------- ##
+
 # Partial effects created separately for SL, DF, RF using gratia::draw
 # Partial effect plot for slide-type from fitted model (fit_slides)
 mys <- smooths(fit_slides) # list of smooth terms available in fit_slides
@@ -544,7 +559,7 @@ plots <- lapply(seq_along(plots), function(i) {
   return(p)
 })
 length(plots) # check number of plots produced
-# Tag letters for each plot ---------------------------------------------------------------------------------
+# Tag letters for each plot ====
 tags <- letters[1:length(plots)] # generates sequence "a", "b", "c", ...
 plots <- lapply(seq_along(plots), function(i) {
   p <- plots[[i]] +
@@ -693,4 +708,4 @@ plots <- lapply(seq_along(plots), function(i) {
 p_RF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = "keep") # 4 columns grid
 print(p_RF) # render fall partials (Fig. 8)
 
-# End of script ---------------------------------------------------------------------------------------
+## End of script ------------------------------------------------------------ ##

@@ -655,7 +655,7 @@ print(varimpoRF) # sorted and renamed importance results for fall-types (RF)
 p_vi_1 <- ggplot(varimpoSL, aes(x = Importance, y = Variable)) +
   geom_point(color = cols, size = 3) + # point for importance
   geom_errorbarh(aes(xmin = Importance - StDev, xmax = Importance + StDev),
-    height = 0.3, color = cols, size = 1
+    width = 0.3, color = cols, size = 1
   ) + # horizontal error bars represent permute SD
   theme_minimal(base_size = 14) + # readable baseline font size
   labs(title = "Slide-type", x = "Importance", y = "Variable") +
@@ -668,7 +668,7 @@ p_vi_1 <- ggplot(varimpoSL, aes(x = Importance, y = Variable)) +
 p_vi_2 <- ggplot(varimpoDF, aes(x = Importance, y = Variable)) +
   geom_point(color = cold, size = 3) +
   geom_errorbarh(aes(xmin = Importance - StDev, xmax = Importance + StDev),
-    height = 0.3, color = cold, size = 1
+    width = 0.3, color = cold, size = 1
   ) +
   theme_minimal(base_size = 14) +
   labs(title = "Flow-type", x = "Importance", y = "Variable") +
@@ -681,7 +681,7 @@ p_vi_2 <- ggplot(varimpoDF, aes(x = Importance, y = Variable)) +
 p_vi_3 <- ggplot(varimpoRF, aes(x = Importance, y = Variable)) +
   geom_point(color = colr, size = 3) +
   geom_errorbarh(aes(xmin = Importance - StDev, xmax = Importance + StDev),
-    height = 0.3, color = colr, size = 1
+    width = 0.3, color = colr, size = 1
   ) +
   theme_minimal(base_size = 14) +
   labs(title = "Fall-type", x = "Importance", y = "Variable") +

@@ -30,17 +30,19 @@ rm(list = ls())
 gc()
 
 # Load packages
-library("mgcv") # fitting GAMs (bam/gam)
-library("dplyr") # data manipulation
-library("purrr") # functional programming
-library("sf") # spatial vector data (simple features)
-library("ggplot2") # plotting
-library("patchwork") # compose ggplots
-library("tmap") # thematic mapping for sf objects
-library("sperrorest") # spatial error estimation
-library("pROC") # ROC / AUC calculations
-library("vip") # variable importance computation
-library("gratia") # diagnostic & plotting helpers for GAMs
+suppressPackageStartupMessages({
+  library("mgcv") # fitting GAMs (bam/gam)
+  library("dplyr") # data manipulation
+  library("purrr") # functional programming
+  library("sf") # spatial vector data (simple features)
+  library("ggplot2") # plotting
+  library("patchwork") # compose ggplots
+  library("tmap") # thematic mapping for sf objects
+  library("sperrorest") # spatial error estimation
+  library("pROC") # ROC / AUC calculations
+  library("vip") # variable importance computation
+  library("gratia") # diagnostic & plotting helpers for GAMs
+})
 
 ## -------------------------------------------------------------------------- ##
 ## Config ----

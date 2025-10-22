@@ -25,6 +25,8 @@
 ## Setup ----
 ## -------------------------------------------------------------------------- ##
 
+logger::log_info("S0 » Running setup and config")
+
 # clean workspace and run garbage collection to free memory
 rm(list = ls())
 gc()
@@ -42,6 +44,7 @@ suppressPackageStartupMessages({
   library("pROC") # ROC / AUC calculations
   library("vip") # variable importance computation
   library("gratia") # diagnostic & plotting helpers for GAMs
+  library("logger") # logging
 })
 
 ## -------------------------------------------------------------------------- ##
@@ -70,6 +73,7 @@ common_theme <- theme_minimal(base_size = 12) + # base theme for ggplot
 ## Step 1: Load data ----
 ## -------------------------------------------------------------------------- ##
 
+log_info("S1 » Loading data")
 # Load preprocessed input data
 
 basins <- readRDS("data/basins_compressed.rds") # Basins with static data (sf) -- polygons with attributes
@@ -86,6 +90,7 @@ varimpoDF <- readRDS("data/varimpoDF.rds") # Plot-ready variable importance data
 varimpoRF <- readRDS("data/varimpoRF.rds") # Plot-ready variable importance data for fall-type (RF)
 
 # Example: Alpine Space outline map
+log_info("-- » Creating Alpine space outline map")
 tm_shape(AS) +
   tm_fill(col = "lightgrey") +
   tm_borders(col = "black", lwd = 2) +
@@ -96,6 +101,7 @@ tm_shape(AS) +
 #     - "Missing" (NA) means no PPA pixel in the entire basin;
 #     - Facets show slope maps for slides (SL), flows (DF) and falls (RF), respectively
 #     - Basin polygons are filled without outlines; use tm_polygons() for visualizing borders
+log_info("-- » Creating example plot for basins")
 tm_shape(basins) +
   tm_fill(c("SL_Slope", "DF_Slope", "RF_Slope"),
     fill.scale = tm_scale(values = c("#d7f4be", "#f0d076", "#e73030")),
@@ -148,9 +154,9 @@ fit_gamm <- function(formula, data, summary = TRUE, plot = TRUE, ...) {
 ## -------------------------------------------------------------------------- ##
 
 # Slide-type (SL) model ====
+log_info("S2 » Fitting slide type model")
 
 # Define formula for SL ####
-
 fo_slides <-
   SL01 ~ # Binary response variable for slide-type (SL) -- dependent variable in training data
   s(tp_2, k = maxk) + # Short-term precipitation (smoothed)
@@ -173,6 +179,7 @@ fit_slides <- fit_gamm(formula = fo_slides, data = df_slides, nthreads = ncores)
 ## -------------------------------------------------------------------------- ##
 
 # Flow-type (DF) model ====
+log_info("-- Fitting flow type model")
 
 # Define formula for DF ####
 fo_flows <-
@@ -199,6 +206,7 @@ fit_flows <- fit_gamm(formula = fo_flows, data = df_flows, nthreads = ncores)
 # Fall-type (RF) model ====
 
 # Define formula for (RF) ####
+log_info("-- » Fitting fall-type model")
 fo_falls <-
   RF01 ~ # Response for fall-type (RF) (binary)
   s(tp_2, k = maxk) + # Short term precipitation (smoothed)
@@ -223,6 +231,8 @@ fit_falls <- fit_gamm(formula = fo_falls, data = df_falls, nthreads = ncores)
 ## Step 3: Calculate fitting performance and plot ROC curves ----
 ##         (Fig. 4a in publication)
 ## -------------------------------------------------------------------------- ##
+
+log_info("S3 » Assessing model performance")
 
 ## -------------------------------------------------------------------------- ##
 ## Helper functions ====
@@ -343,6 +353,7 @@ auc_labels <- results |>
     .keep = "none"
   )
 
+log_info("-- » RESULT: AUC per process type:")
 auc_vals <- setNames(
   paste0(auc_labels$Process, " (AUC = ", round(auc_labels$AUC, 2), ")"),
   auc_labels$Process
@@ -353,6 +364,7 @@ auc_vals <- setNames(
 roc_all <- bind_rows(results$roc_data) |>
   mutate(Process = factor(Process, levels = auc_labels$Process))
 
+log_info("-- » RESULT: Optimal cutpoints per process type:")
 cutpoints <- bind_rows(results$cutpoint_data) |>
   mutate(Process = factor(Process, levels = auc_labels$Process)) |>
   print()
@@ -381,6 +393,7 @@ p_roc <- ggplot(roc_all, aes(x = FPR, y = TPR, color = Process)) +
     legend.background = element_rect(fill = alpha("white", 0.7), color = NA), # translucent bg for legend
     legend.key.size = unit(1.5, "lines"), legend.text = element_text(size = 12)
   )
+log_info("-- » Creating ROC plot")
 p_roc
 
 
@@ -389,7 +402,9 @@ p_roc
 ##         Snippet code for basin-based CV and visualizing final performance
 ##         (Fig. 4a-d in publication)
 ## -------------------------------------------------------------------------- ##
-#
+
+log_info("S4 » Performing cross validation")
+
 # This section
 #    - describes how basin-based cross-validation was performed and
 #    - provides data and plots.
@@ -483,6 +498,7 @@ if (!DONTRUN) {
 ## -------------------------------------------------------------------------- ##
 
 # extract stats from cross-validation outputs (slide / flow / fall) ====
+log_info("-- » Assessing CV results")
 
 #' Summarize Cross-Validation Results
 #'
@@ -542,12 +558,14 @@ RFcv_medians <- RFcv |>
 max_medianRF <- max(RFcv_medians$median_AUROC)
 
 # IQR metrics used in text or figure annotations ====
+log_info("-- » RESULT: IQR for SL30, DF21 and RF14:")
 (iqr_SL_30 <- IQR(SLcv$AUROC[SLcv$Formula == "30 days"], na.rm = TRUE)) # Slide-type IQR for 30d formula
 (iqr_DF_21 <- IQR(DFcv$AUROC[DFcv$Formula == "21 days"], na.rm = TRUE)) # Flow-type IQR for 21d
 (iqr_RF_14 <- IQR(RFcv$AUROC[RFcv$Formula == "14 days"], na.rm = TRUE)) # Fall-type IQR for 14d
 
 ## -------------------------------------------------------------------------- ##
 # Create boxplots for each process type with unified theme (Fig. 4) ====
+
 # SL
 p1 <- ggplot(SLcv, aes(x = Formula, y = AUROC)) +
   geom_boxplot(fill = cols) +
@@ -605,6 +623,8 @@ combined_plot <- (p_roc_tagged + p1_tagged) / (p2_tagged + p3_tagged) +
   plot_layout(tag_level = "keep") &
   # style tags
   theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1))
+
+log_info("-- » Creating composite performance plot (Fig. 4)")
 print(combined_plot)
 
 
@@ -613,6 +633,8 @@ print(combined_plot)
 ##         (incl. snippet code for calculating feature importance)
 ##         (Fig. 5)
 ## -------------------------------------------------------------------------- ##
+
+log_info("S5 » Assessing variable importance")
 
 # Snippet code for slide-type models (SL) -- permutation importance via vip::vi_permute (for fast demo nsim small)
 mynsim <- 5 # set the number of permutations per variable (set to 100 in original publication -> slow)
@@ -642,14 +664,21 @@ result_s <- vi_permute(
 # Optionally drop random effect variables from importance table
 result_s <- result_s |>
   dplyr::filter(!(Variable %in% c("cat", "year"))) # remove random effect vars since permuting them is not meaningful
-print(result_s) # print slide VI results (use in SI or checks)
 # repeat for flow-types and fall-types and create "varimpo" data (increase mynsim beforehand)
 
 # Print raw and processed importance outputs ====
-print(varimpo_raw, n = 33) # raw results
-print(varimpoSL) # sorted and renamed importance results for slide-types (SL)
-print(varimpoDF) # sorted and renamed importance results for flow-types (DF)
-print(varimpoRF) # sorted and renamed importance results for fall-types (RF)
+log_info("-- » RESULT: raw VI dataframe")
+print(varimpo_raw, n = nrow(varimpo_raw))
+
+# sorted and renamed importance results for all three process models
+log_info("-- » RESULT: VI of slide-type model")
+print(varimpoSL)
+
+log_info("-- » RESULT: VI of flow-type model")
+print(varimpoDF)
+
+log_info("-- » RESULT: VI of fall-type model")
+print(varimpoRF)
 
 # create plots for variable importance w/ ggplot2 (Fig. 5) ====
 p_vi_1 <- ggplot(varimpoSL, aes(x = Importance, y = Variable)) +
@@ -700,6 +729,8 @@ p_vi_3_tagged <- p_vi_3 + labs(tag = "c)")
 combined_plot <- (p_vi_1_tagged) / (p_vi_2_tagged) / (p_vi_3_tagged) +
   plot_layout(tag_level = "keep") &
   theme(plot.tag = element_text(size = 16, face = "bold", hjust = 0, vjust = 1))
+
+log_info("-- » Creating variable importance plot (Fig. 5)")
 print(combined_plot)
 
 
@@ -709,11 +740,15 @@ print(combined_plot)
 ## -------------------------------------------------------------------------- ##
 
 # Partial effects created separately for SL, DF, RF using gratia::draw()
+log_info("S6 » Assessing partial effects")
 
 # Partial effect plot for slide-type from fitted model `fit_slides` (Fig. 6) ####
+log_info("-- » Estimating partial effects for slide-type model")
+
+# get smooths
 mys <- smooths(fit_slides)
 # indices of smooths to extract (custom selection, first eight elements)
-(myselect <- mys[1:8])
+myselect <- mys[1:8]
 
 # Define custom labels for each plot
 custom_titles <- c(
@@ -776,18 +811,19 @@ plots <- lapply(seq_along(plots), function(i) {
 
 # Combine plots with tags preserved (wrap_plots from patchwork)
 p_SL <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = "keep") # arrange into grid, 4 columns
-print(p_SL) # render slide-type partial effects (Fig. 6)
+
+log_info("-- » Creating partial effects plot for slide-type model (Fig. 6)")
+print(p_SL)
 
 ## -------------------------------------------------------------------------- ##
 
 # Partial effect plot for flow-type from fitted model `fit_flows` (Fig. 7)
-(mys <- smooths(fit_flows))
+log_info("-- » Estimating partial effects for slide-type model")
 
+# get smooths
+mys <- smooths(fit_flows)
 # model diagnostics reminder
-summary(fit_flows)
-
-# selection indices for flow model smooths
-(myselect <- mys[1:8])
+myselect <- mys[1:8]
 
 # Define custom labels for each plot for flows
 custom_titles <- c(
@@ -842,16 +878,19 @@ plots <- lapply(seq_along(plots), function(i) {
 
 # Combine and keep tags for flow plots
 p_DF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = "keep") # 4 columns layout
+
+log_info("-- » Creating partial effects plot for flow-type model (Fig. 7)")
 print(p_DF)
 
 ## -------------------------------------------------------------------------- ##
 
 # Partial effect plot for fall-type from fitted model `fit_falls` (Fig. 8)
-(mys <- smooths(fit_falls))
-# model summary check
-summary(fit_falls)
+log_info("-- » Estimating partial effects for fall-type model")
+
+# get smooths
+mys <- smooths(fit_falls)
 # selection indices for fall model
-(myselect <- mys[1:8])
+myselect <- mys[1:8]
 
 # Define custom labels for fall plots
 custom_titles <- c(
@@ -915,6 +954,8 @@ plots <- lapply(seq_along(plots), function(i) {
 
 # Combine and keep tags for fall-type partials (4 columns grid)
 p_RF <- wrap_plots(plots, ncol = 4) + plot_layout(tag_level = "keep")
+
+log_info("-- » Creating partial effects plot for slide-type model (Fig. 8)")
 print(p_RF)
 
 ## End of script ------------------------------------------------------------ ##

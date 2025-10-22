@@ -517,10 +517,14 @@ log_info("-- » Assessing CV results")
 #' - Min_AUROC: The minimum AUROC value for each formula.
 #' - Max_AUROC: The maximum AUROC value for each formula.
 #' - IQR_AUROC: The interquartile range (IQR) of AUROC values for each formula.
+convert_formula <- function(data, levels, labels) {
+  # Convert Formula to factor with custom labels for consistent x-axis labels
+  data |>
+    mutate(Formula = factor(Formula, levels = levels, labels = labels))
+}
 summarize_cv <- function(data, custom_order, custom_labels) {
   data |>
-    # Convert Formula to factor with custom labels for consistent x-axis labels
-    mutate(Formula = factor(Formula, levels = custom_order, labels = custom_labels)) |>
+    convert_formula(levels = custom_order, labels = custom_labels) |>
     group_by(Formula) |>
     summarise(
       Mean_AUROC = mean(AUROC),
@@ -537,21 +541,26 @@ custom_order <- c("fo_null", "fo_7", "fo_14", "fo_21", "fo_30")
 custom_labels <- c("Null", "7 days", "14 days", "21 days", "30 days")
 
 # Summarize cross-validation results for slides, flows, and falls ====
-SLcv_summary <- summarize_cv(SLcv, custom_order, custom_labels)
-DFcv_summary <- summarize_cv(DFcv, custom_order, custom_labels)
-RFcv_summary <- summarize_cv(RFcv, custom_order, custom_labels)
+log_info("-- » RESULT: CV AUROC for slides, flows and falls:")
+summarize_cv(SLcv, custom_order, custom_labels)
+summarize_cv(DFcv, custom_order, custom_labels)
+summarize_cv(RFcv, custom_order, custom_labels)
 
 # Compute median AUROC per group ====
+
+SLcv <- convert_formula(SLcv, levels = custom_order, labels = custom_labels)
 SLcv_medians <- SLcv |>
   group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
 max_medianSL <- max(SLcv_medians$median_AUROC) # used for title annotation
 
+DFcv <- convert_formula(DFcv, levels = custom_order, labels = custom_labels)
 DFcv_medians <- DFcv |>
   group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))
 max_medianDF <- max(DFcv_medians$median_AUROC)
 
+RFcv <- convert_formula(RFcv, levels = custom_order, labels = custom_labels)
 RFcv_medians <- RFcv |>
   group_by(Formula) |>
   summarise(median_AUROC = median(AUROC, na.rm = TRUE))

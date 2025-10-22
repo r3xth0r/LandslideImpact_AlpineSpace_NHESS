@@ -66,7 +66,7 @@ common_theme <- theme_minimal(base_size = 12) + # base theme for ggplot
     axis.text = element_text(size = 12),
     legend.text = element_text(size = 12),
     legend.title = element_text(size = 12),
-    panel.border = element_rect(color = "black", fill = NA, size = 0.5) # subtle border for clarity
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5) # subtle border for clarity
   )
 
 ## -------------------------------------------------------------------------- ##
